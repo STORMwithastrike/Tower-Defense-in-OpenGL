@@ -3,6 +3,7 @@
 Projectile::Projectile() {
     position = glm::vec2(0.0f, 0.0f);
     speed = 0.2f;
+    damage = 1;
     active = false;
 }
 
@@ -50,10 +51,10 @@ void Projectile::generateMesh() {
         indices.push_back(base + 2);
         };
 
-    // Shaft (brown rectangle)
+    // stick
     addQuad(0.0f, 3.0f, 26.0f, 6.0f, 0.55f, 0.35f, 0.20f);
 
-    // Arrowhead (gray tip )
+    // Arrowhead
     addTriangle(26.0f, 0.0f, 26.0f, 12.0f, 38.0f, 6.0f, 0.20f, 0.20f, 0.22f);
 }
 

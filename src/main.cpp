@@ -11,6 +11,7 @@
 #include "../headers/DefensePlayer.h"
 #include "../headers/Projectile.h"
 #include "../headers/LaneSelector.h"
+#include "../headers/ActionManager.h"
 #include <glm/glm.hpp>
 #include <iostream>
 #include <vector>
@@ -53,20 +54,22 @@ int main() {
     LaneSelector laneSelector;
 
     // --- 2A: PLAYER SETUP ---
-    // Melee Knight in Lane 0[cite: 5, 9]
+    const auto& lanes = gameGrid.getLanes();
+    float spawnX = lanes[0].minX + 15.0f;
+
     MeleePlayer meleePlayer(0);
-    meleePlayer.init(35.0f, gameGrid.getLaneCenterY(0) - 27.5f);
+    meleePlayer.init(spawnX, gameGrid.getLaneCenterY(0) - 27.5f);
     VertexArray meleeVAO(meleePlayer.getVertices(), meleePlayer.getIndices());
 
-    // Ranged Archer in Lane 1[cite: 5, 9]
     RangedPlayer rangedPlayer(1);
-    rangedPlayer.init(35.0f, gameGrid.getLaneCenterY(1) - 27.5f);
+    rangedPlayer.init(spawnX, gameGrid.getLaneCenterY(1) - 27.5f);
     VertexArray rangedVAO(rangedPlayer.getVertices(), rangedPlayer.getIndices());
 
-    // Defense Guardian in Lane 2[cite: 5, 9]
     DefensePlayer defensePlayer(2);
-    defensePlayer.init(35.0f, gameGrid.getLaneCenterY(2) - 27.5f);
+    defensePlayer.init(spawnX, gameGrid.getLaneCenterY(2) - 27.5f);
     VertexArray defenseVAO(defensePlayer.getVertices(), defensePlayer.getIndices());
+
+    std::vector<Player*> activePlayers = { &meleePlayer, &rangedPlayer, &defensePlayer };
 
     // --- 3A: PROJECTILE SETUP ---
     Projectile protoArrow;
@@ -76,10 +79,15 @@ int main() {
     std::vector<Projectile> projectiles;
     bool wasSpacePressed = false;
 
+    float lastFrameTime = static_cast<float>(glfwGetTime());
     const glm::vec3 clearColor(0.10f, 0.12f, 0.18f);
 
     // --- GAME LOOP ---
     while (!gameWindow.shouldClose()) {
+        float currentFrameTime = static_cast<float>(glfwGetTime());
+        float dt = currentFrameTime - lastFrameTime;
+        lastFrameTime = currentFrameTime;
+
         glClearColor(clearColor.r, clearColor.g, clearColor.b, 1.0f);
         glClear(GL_COLOR_BUFFER_BIT);
 
@@ -88,10 +96,22 @@ int main() {
         double mouseY = InputManager::getMouseY();
         bool isClicking = InputManager::isMouseButtonPressed(GLFW_MOUSE_BUTTON_LEFT);
 
-        // 2. Pure-logic LaneSelector
+        // 2. Lane selection logic
         laneSelector.update(gameGrid, mouseX, mouseY, isClicking);
 
-        // 3. Firing on Spacebar press (from the archer in Lane 1)[cite: 9]
+        // 3. ActionManager handles W (Jump) and S (Duck) for selected lanes
+        std::vector<int> selectedLanes;
+        if (laneSelector.getSelectedLaneId() != -1) {
+            selectedLanes.push_back(laneSelector.getSelectedLaneId());
+        }
+        ActionManager::handleInput(activePlayers, selectedLanes);
+
+        // 4. Update Players
+        meleePlayer.update(dt);
+        rangedPlayer.update(dt);
+        defensePlayer.update(dt);
+
+        // 5. Fire projectile on Spacebar tap
         bool isSpacePressed = InputManager::isKeyPressed(GLFW_KEY_SPACE);
         if (isSpacePressed && !wasSpacePressed) {
             Projectile arrow;
@@ -100,12 +120,12 @@ int main() {
         }
         wasSpacePressed = isSpacePressed;
 
-        // 4. Render Grid & Environment
+        // 6. Render Environment & Grid
         myRenderer.Draw(gridVAO, glm::vec2(0.0f, 0.0f), glm::vec2(1.0f, 1.0f), 0.0f, glm::vec4(1.0f));
         myRenderer.Draw(envVAO, glm::vec2(0.0f, 0.0f), glm::vec2(1.0f, 1.0f), 0.0f, glm::vec4(1.0f));
 
-        // 5. Render Highlights
-        for (const auto& lane : gameGrid.getLanes()) {
+        // 7. Render Lane Highlights
+        for (const auto& lane : lanes) {
             float highlightAmount = 0.0f;
             glm::vec4 tintColor(1.0f);
 
@@ -125,12 +145,12 @@ int main() {
             }
         }
 
-        // 6. Render All Three Player Types[cite: 5]
+        // 8. Render Players
         myRenderer.Draw(meleeVAO, meleePlayer.getRenderPosition(), glm::vec2(1.0f, 1.0f), 0.0f, glm::vec4(1.0f));
         myRenderer.Draw(rangedVAO, rangedPlayer.getRenderPosition(), glm::vec2(1.0f, 1.0f), 0.0f, glm::vec4(1.0f));
         myRenderer.Draw(defenseVAO, defensePlayer.getRenderPosition(), glm::vec2(1.0f, 1.0f), 0.0f, glm::vec4(1.0f));
 
-        // 7. Update & Render Active Projectiles
+        // 9. Update & Render Projectiles
         for (auto& arrow : projectiles) {
             if (arrow.isActive()) {
                 arrow.update();

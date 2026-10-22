@@ -10,6 +10,7 @@ private:
 
     glm::vec2 position;
     float speed;
+    int damage;
     bool active;
 
     void generateMesh();
@@ -26,6 +27,7 @@ public:
     glm::vec2 getPosition() const { return position; }
     void setPosition(glm::vec2 pos) { position = pos; }
 
+    int getDamage() const { return damage; }
     bool isActive() const { return active; }
     void setActive(bool state) { active = state; }
 };
