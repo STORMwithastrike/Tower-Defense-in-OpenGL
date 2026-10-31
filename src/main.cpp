@@ -4,6 +4,7 @@
 #include "render/VertexArray.h"
 #include "render/Renderer.h"
 #include "../headers/Grid.h"
+#include "../headers/HomeBase.h"
 #include "../headers/Environment.h"
 #include "../headers/Player.h"
 #include "../headers/MeleePlayer.h"
@@ -53,6 +54,8 @@ int main() {
 
     LaneSelector laneSelector;
 
+    HomeBase homeBase(0.0f, 0.0f, 60.0f, 600.0f);
+
     // --- 2A: PLAYER SETUP ---
     const auto& lanes = gameGrid.getLanes();
     float spawnX = lanes[0].minX + 15.0f;
@@ -91,38 +94,53 @@ int main() {
         glClearColor(clearColor.r, clearColor.g, clearColor.b, 1.0f);
         glClear(GL_COLOR_BUFFER_BIT);
 
-        // 1. Live mouse state
-        double mouseX = InputManager::getMouseX();
-        double mouseY = InputManager::getMouseY();
-        bool isClicking = InputManager::isMouseButtonPressed(GLFW_MOUSE_BUTTON_LEFT);
-
-        // 2. Lane selection logic
-        laneSelector.update(gameGrid, mouseX, mouseY, isClicking);
-
-        // 3. ActionManager handles W (Jump) and S (Duck) for selected lanes
-        std::vector<int> selectedLanes;
-        if (laneSelector.getSelectedLaneId() != -1) {
-            selectedLanes.push_back(laneSelector.getSelectedLaneId());
+        // Pressing 'B' tests the losing condition by simulating an enemy reaching X = 50
+        if (InputManager::isKeyPressed(GLFW_KEY_B)) {
+            homeBase.checkEnemyReached(50.0f);
         }
-        ActionManager::handleInput(activePlayers, selectedLanes);
 
-        // 4. Update Players
-        meleePlayer.update(dt);
-        rangedPlayer.update(dt);
-        defensePlayer.update(dt);
+        // Only update movement, inputs, and actions if the base is NOT breached
+        if (!homeBase.hasLostGame()) {
+            // 1. Live mouse state
+            double mouseX = InputManager::getMouseX();
+            double mouseY = InputManager::getMouseY();
+            bool isClicking = InputManager::isMouseButtonPressed(GLFW_MOUSE_BUTTON_LEFT);
 
-        // 5. Fire projectile on Spacebar tap
-        bool isSpacePressed = InputManager::isKeyPressed(GLFW_KEY_SPACE);
-        if (isSpacePressed && !wasSpacePressed) {
-            Projectile arrow;
-            arrow.init(rangedPlayer.getPosition().x + 35.0f, rangedPlayer.getPosition().y + 24.0f);
-            projectiles.push_back(arrow);
+            // 2. Lane selection logic
+            laneSelector.update(gameGrid, mouseX, mouseY, isClicking);
+                        // 3. ActionManager handles W (Jump) and S (Duck) for selected lanes
+            std::vector<int> selectedLanes;
+            if (laneSelector.getSelectedLaneId() != -1) {
+                selectedLanes.push_back(laneSelector.getSelectedLaneId());
+            }
+            ActionManager::handleInput(activePlayers, selectedLanes);
+
+            // 4. Update Players
+            meleePlayer.update(dt);
+            rangedPlayer.update(dt);
+            defensePlayer.update(dt);
+
+            // 5. Fire projectile on Spacebar tap
+            bool isSpacePressed = InputManager::isKeyPressed(GLFW_KEY_SPACE);
+            if (isSpacePressed && !wasSpacePressed) {
+                Projectile arrow;
+                arrow.init(rangedPlayer.getPosition().x + 35.0f, rangedPlayer.getPosition().y + 24.0f);
+                projectiles.push_back(arrow);
+            }
+            wasSpacePressed = isSpacePressed;
         }
-        wasSpacePressed = isSpacePressed;
 
         // 6. Render Environment & Grid
         myRenderer.Draw(gridVAO, glm::vec2(0.0f, 0.0f), glm::vec2(1.0f, 1.0f), 0.0f, glm::vec4(1.0f));
         myRenderer.Draw(envVAO, glm::vec2(0.0f, 0.0f), glm::vec2(1.0f, 1.0f), 0.0f, glm::vec4(1.0f));
+
+        //Draw the Home Base on the left edge
+        glm::vec4 baseColor = homeBase.hasLostGame()
+            ? glm::vec4(0.85f, 0.15f, 0.15f, 1.0f) // Red if breached
+            : glm::vec4(0.15f, 0.35f, 0.70f, 1.0f); // Blue while safe
+
+        myRenderer.Draw(quadVAO, homeBase.getPosition(), homeBase.getSize(), 0.0f, baseColor);
+
 
         // 7. Render Lane Highlights
         for (const auto& lane : lanes) {
