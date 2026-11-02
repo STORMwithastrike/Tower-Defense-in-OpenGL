@@ -9,14 +9,12 @@ class HardEnemy : public Enemy {
 public:
     HardEnemy(int lane, const glm::vec2& startPos);
 
-    void Update(float dt, std::vector<Projectile>& activeProjectiles) override;
+    void Update(float dt, std::vector<EnemyProjectile>& activeProjectiles) override;
     void Render(Renderer& renderer) override;
 
-    // Melee attack animation trigger
     void TriggerSlash();
 
 private:
     float swordAngle;
     float swingAnimTimer;
 };
-

@@ -1,4 +1,5 @@
 #include "CombatSystem.h"
+#include "../../headers/DefensePlayer.h"
 #include <algorithm>
 
 CombatSystem::CombatSystem()
@@ -9,7 +10,7 @@ CombatSystem::CombatSystem()
 }
 
 void CombatSystem::Update(float dt,
-                          std::vector<std::unique_ptr<Player>>& players,
+                          std::vector<Player*>& players,
                           std::vector<std::unique_ptr<Enemy>>& enemies,
                           std::vector<Collectible>& collectibles)
 {
@@ -19,22 +20,22 @@ void CombatSystem::Update(float dt,
         combatTickTimer = 0.0f;
     }
 
-    // 1. Process active melee combat engagements
-    for (auto& p : players) {
-        if (!p || p->IsDead() || !p->IsFighting()) continue;
+    // 1. Process active melee combat encounters
+    for (Player* p : players) {
+        if (!p || !p->isAlive()) continue;
 
         for (auto& e : enemies) {
             if (!e || e->IsDead() || !e->IsFighting()) continue;
-            if (p->GetLane() != e->GetLane()) continue;
+            if (p->getLaneId() != e->GetLane()) continue;
 
             if (shouldTickDamage) {
-                // Friendly attack: All player types (except defense) deal 1 damage to enemies
-                if (p->GetType() != PlayerType::DEFENSE) {
+                // Friendly attack (all except stationary defense deal 1 damage)
+                if (p->getAdvanceSpeed() > 0.0f) {
                     e->TakeDamage(1);
                 }
 
-                // Enemy attack: Deals 1 damage (or 2 damage for Hard Melee Enemy)
-                p->TakeDamage(e->GetDamage());
+                // Enemy attack (1 damage or 2 for Hard Melee)
+                p->takeDamage(e->GetDamage());
             }
         }
     }
@@ -42,7 +43,6 @@ void CombatSystem::Update(float dt,
     // 2. Process Enemy Deaths & Drops
     for (auto it = enemies.begin(); it != enemies.end(); ) {
         if ((*it)->IsDead()) {
-            // Defeated enemies drop collectibles as required by the specification
             collectibles.emplace_back((*it)->GetLane(), (*it)->GetPosition(), 10);
             defeatedCount++;
             it = enemies.erase(it);
@@ -50,15 +50,4 @@ void CombatSystem::Update(float dt,
             ++it;
         }
     }
-
-    // 3. Process Player Deaths
-    for (auto it = players.begin(); it != players.end(); ) {
-        if ((*it)->IsDead()) {
-            // Player defeated and removed from the scene
-            it = players.erase(it);
-        } else {
-            ++it;
-        }
-    }
 }
-

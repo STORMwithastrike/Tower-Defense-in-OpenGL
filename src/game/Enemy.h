@@ -3,7 +3,7 @@
 #include <glm/glm.hpp>
 #include <vector>
 #include "Types.h"
-#include "Projectile.h"
+#include "EnemyProjectile.h"
 #include "../render/Renderer.h"
 
 class Enemy {
@@ -11,7 +11,7 @@ public:
     Enemy(int lane, const glm::vec2& startPos, EnemyType type, int maxHealth, int damage, float speed);
     virtual ~Enemy() = default;
 
-    virtual void Update(float dt, std::vector<Projectile>& activeProjectiles);
+    virtual void Update(float dt, std::vector<EnemyProjectile>& activeProjectiles);
     virtual void Render(Renderer& renderer) = 0;
 
     virtual void TakeDamage(int damage);
@@ -58,4 +58,3 @@ protected:
 
     void renderHealthBar(Renderer& renderer, float yOffset = -34.0f) const;
 };
-

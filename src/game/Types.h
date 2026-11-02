@@ -2,6 +2,7 @@
 
 #include <glm/glm.hpp>
 #include <algorithm>
+#include "../../headers/WaveManager.h"
 
 struct BoundingBox {
     float x;
@@ -31,15 +32,8 @@ enum class AttackHeight {
     MELEE   // Close-range encounter
 };
 
-enum class EnemyType {
-    EASY_UPPER_RANGED,
-    MEDIUM_LOWER_RANGED,
-    HARD_MELEE
-};
-
 enum class PlayerType {
     MELEE,
     RANGED,
     DEFENSE
 };
-

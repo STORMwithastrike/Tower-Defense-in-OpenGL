@@ -8,10 +8,9 @@ class MediumEnemy : public Enemy {
 public:
     MediumEnemy(int lane, const glm::vec2& startPos);
 
-    void Update(float dt, std::vector<Projectile>& activeProjectiles) override;
+    void Update(float dt, std::vector<EnemyProjectile>& activeProjectiles) override;
     void Render(Renderer& renderer) override;
 
 private:
     float thrustAnim;
 };
-
