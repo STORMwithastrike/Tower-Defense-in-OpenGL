@@ -8,10 +8,7 @@ void Grid::init() {
 }
 
 float Grid::getLaneCenterY(int laneIndex) const {
-    if (laneIndex >= 0 && laneIndex < static_cast<int>(lanes.size())) {
-        return lanes[laneIndex].centerY;
-    }
-    return 0.0f;
+    return lanes[laneIndex].centerY;
 }
 
 void Grid::generateMesh() {
