@@ -2,12 +2,17 @@
 
 RangedPlayer::RangedPlayer(int lane)
     : Player(5, lane) { // 5 lives
+    maxHealth = 5;
+    health = 5;
     advanceSpeed = 30.0f; 
     canDodge = true; 
 }
 
 void RangedPlayer::init(float startX, float startY) {
     position = glm::vec2(startX, startY);
+    maxHealth = 5;
+    health = 5;
+    active = true;
     generateMesh();
 }
 
