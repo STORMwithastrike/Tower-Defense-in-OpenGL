@@ -7,14 +7,15 @@
 // Deals 2 points of damage per attack!
 class HardEnemy : public Enemy {
 public:
-    HardEnemy(int lane, const glm::vec2& startPos);
+  HardEnemy(int lane, const glm::vec2 &startPos);
 
-    void Update(float dt, std::vector<EnemyProjectile>& activeProjectiles) override;
-    void Render(Renderer& renderer) override;
+  void Update(float dt,
+              std::vector<EnemyProjectile> &activeProjectiles) override;
+  void Render(Renderer &renderer) override;
 
-    void TriggerSlash();
+  void TriggerSlash();
 
 private:
-    float swordAngle;
-    float swingAnimTimer;
+  float swordAngle;
+  float swingAnimTimer;
 };
