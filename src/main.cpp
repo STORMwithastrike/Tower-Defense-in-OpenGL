@@ -4,6 +4,7 @@
 #include "../headers/Economy.h"
 #include "../headers/Environment.h"
 #include "../headers/Grid.h"
+#include "../headers/HealthUI.h"
 #include "../headers/HomeBase.h"
 #include "../headers/InputManager.h"
 #include "../headers/LaneSelector.h"
@@ -60,6 +61,7 @@ int main() {
     Camera camera(screenWidth, screenHeight);
     Renderer renderer(&mainShader, screenWidth, screenHeight);
     renderer.SetCamera(&camera);
+    Renderer& myRenderer = renderer;
 
     // 2. Playfield Grid & Environment
     Grid gameGrid;
@@ -105,6 +107,19 @@ int main() {
     Projectile arrowProto;
     arrowProto.init(0.0f, 0.0f);
     VertexArray projectileVAO(arrowProto.getVertices(), arrowProto.getIndices());
+
+    // Quad VAO for HealthUI
+    std::vector<float> quadVertices = {
+        0.0f, 0.0f, 0.0f, 1.0f, 1.0f, 1.0f,
+        1.0f, 0.0f, 0.0f, 1.0f, 1.0f, 1.0f,
+        0.0f, 1.0f, 0.0f, 1.0f, 1.0f, 1.0f,
+        1.0f, 1.0f, 0.0f, 1.0f, 1.0f, 1.0f
+    };
+    std::vector<unsigned int> quadIndices = {
+        0, 1, 2,
+        1, 3, 2
+    };
+    VertexArray quadVAO(quadVertices, quadIndices);
 
     // Enemy Entities, Hostile Projectiles & Collectibles
     std::vector<std::unique_ptr<Enemy>> enemies;
@@ -258,6 +273,18 @@ int main() {
                 selectedLanes.push_back(laneSelector.getSelectedLaneId());
             }
             ActionManager::handleInput(activePlayers, selectedLanes);
+
+            // Test key to simulate taking damage (K key)
+            static bool wasKPressed = false;
+            bool isKPressed = InputManager::isKeyPressed(GLFW_KEY_K);
+            if (isKPressed && !wasKPressed) {
+                for (Player* p : activePlayers) {
+                    if (p && p->isActive() && p->getLaneId() == laneSelector.getSelectedLaneId()) {
+                        p->takeDamage(1);
+                    }
+                }
+            }
+            wasKPressed = isKPressed;
 
             // 3. Update Players
             meleePlayer.update(dt);
@@ -491,17 +518,15 @@ int main() {
             }
 
             // 5. Render Players
-            if (meleePlayer.isAlive()) {
-                renderer.Draw(meleeVAO, meleePlayer.getRenderPosition(),
-                    glm::vec2(1.0f, 1.0f), 0.0f, glm::vec4(1.0f));
-            }
-            if (rangedPlayer.isAlive()) {
-                renderer.Draw(rangedVAO, rangedPlayer.getRenderPosition(),
-                    glm::vec2(1.0f, 1.0f), 0.0f, glm::vec4(1.0f));
-            }
-            if (defensePlayer.isAlive()) {
-                renderer.Draw(defenseVAO, defensePlayer.getRenderPosition(),
-                    glm::vec2(1.0f, 1.0f), 0.0f, glm::vec4(1.0f));
+            for (Player* p : activePlayers) {
+                if (p && p->isActive()) {
+                    // Render player model with increasing red tint
+                    VertexArray* vao = (p == &meleePlayer) ? &meleeVAO : (p == &rangedPlayer ? &rangedVAO : &defenseVAO);
+                    myRenderer.Draw(*vao, p->getRenderPosition(), glm::vec2(1.0f, 1.0f), 0.0f, p->getDamageTint());
+
+                    // Render health bar above player (width = 55.0f)
+                    HealthUI::draw(myRenderer, quadVAO, p->getRenderPosition(), 55.0f, p->getHealth(), p->getMaxHealth());
+                }
             }
 
             // 6. Render Player Arrows

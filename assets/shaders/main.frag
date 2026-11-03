@@ -36,7 +36,11 @@ void main()
         baseColor.rgb = mix(baseColor.rgb, redDamage, clamp(u_DamageIntensity, 0.0, 0.85));
     }
 
-    // 4. Combine with uniform tint
-    FragColor = baseColor * u_Tint;
+    // 4. Combine with uniform tint (supports direct tint and red damage alpha blend)
+    if (u_Tint.g == 0.0 && u_Tint.b == 0.0 && u_Tint.r == 1.0) {
+        FragColor = mix(baseColor, vec4(1.0, 0.0, 0.0, 1.0), u_Tint.a);
+    } else {
+        FragColor = baseColor * u_Tint;
+    }
 }
 

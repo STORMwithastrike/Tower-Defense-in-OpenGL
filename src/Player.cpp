@@ -2,6 +2,8 @@
 
 Player::Player(int maxHp, int lane)
     : Entity(maxHp, lane),
+    health(maxHp),
+    maxHealth(maxHp),
     advanceSpeed(30.0f),
     canDodge(true),
     isJumping(false),

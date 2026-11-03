@@ -2,12 +2,17 @@
 
 DefensePlayer::DefensePlayer(int lane)
     : Player(7, lane) { // 7 hits
+    maxHealth = 7;
+    health = 7;
     advanceSpeed = 0.0f; // dosnt move
     canDodge = false; // or jump
 }
 
 void DefensePlayer::init(float startX, float startY) {
     position = glm::vec2(startX, startY);
+    maxHealth = 7;
+    health = 7;
+    active = true;
     generateMesh();
 }
 
