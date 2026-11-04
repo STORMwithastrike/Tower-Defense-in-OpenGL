@@ -1,7 +1,7 @@
 #include "../headers/MeleePlayer.h"
 
 MeleePlayer::MeleePlayer(int lane)
-    : Player(5, lane) { // 5 lives
+    : Player(5, lane) {
     maxHealth = 5;
     health = 5;
     advanceSpeed = 30.0f;
@@ -54,13 +54,15 @@ void MeleePlayer::generateMesh() {
         indices.push_back(base + 2);
         };
 
+    // Vertices centered vertically around Y = 0.0f (span: -19.0f to +19.0f)
+
     // 1. Head (Gray Helmet)
-    addQuad(10.0f, 4.0f, 16.0f, 14.0f, 0.60f, 0.65f, 0.70f);
+    addQuad(10.0f, -19.0f, 16.0f, 14.0f, 0.60f, 0.65f, 0.70f);
 
     // 2. Body (Blueish Armor)
-    addQuad(8.0f, 18.0f, 20.0f, 24.0f, 0.35f, 0.45f, 0.60f);
+    addQuad(8.0f, -5.0f, 20.0f, 24.0f, 0.35f, 0.45f, 0.60f);
 
     // 3. Sword (Blade + Tip)
-    addQuad(28.0f, 26.0f, 14.0f, 4.0f, 0.85f, 0.85f, 0.90f);
-    addTriangle(42.0f, 24.0f, 42.0f, 32.0f, 48.0f, 28.0f, 0.85f, 0.85f, 0.90f);
+    addQuad(28.0f, 3.0f, 14.0f, 4.0f, 0.85f, 0.85f, 0.90f);
+    addTriangle(42.0f, 1.0f, 42.0f, 9.0f, 48.0f, 5.0f, 0.85f, 0.85f, 0.90f);
 }

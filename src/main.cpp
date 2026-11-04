@@ -4,7 +4,6 @@
 #include "../headers/Economy.h"
 #include "../headers/Environment.h"
 #include "../headers/Grid.h"
-#include "../headers/HealthUI.h"
 #include "../headers/HomeBase.h"
 #include "../headers/InputManager.h"
 #include "../headers/LaneSelector.h"
@@ -32,6 +31,7 @@
 #include "game/HardEnemy.h"
 #include "game/MediumEnemy.h"
 
+#include <algorithm>
 #include <cmath>
 #include <cstdlib>
 #include <glm/glm.hpp>
@@ -43,8 +43,7 @@ int main() {
     const float screenWidth = 800.0f;
     const float screenHeight = 600.0f;
 
-    Window gameWindow(static_cast<int>(screenWidth),
-        static_cast<int>(screenHeight));
+    Window gameWindow(static_cast<int>(screenWidth), static_cast<int>(screenHeight));
     if (!gameWindow.initialize("Castle Defense - Protect the Princess")) {
         std::cerr << "Failed to initialize Game Window!" << std::endl;
         return -1;
@@ -56,12 +55,10 @@ int main() {
     glfwSetCursorPosCallback(rawWindow, InputManager::cursorPosCallback);
 
     // 1. Shaders, Camera & Renderer
-    Shader mainShader(ASSETS_DIR "shaders/main.vert",
-        ASSETS_DIR "shaders/main.frag");
+    Shader mainShader(ASSETS_DIR "shaders/main.vert", ASSETS_DIR "shaders/main.frag");
     Camera camera(screenWidth, screenHeight);
     Renderer renderer(&mainShader, screenWidth, screenHeight);
     renderer.SetCamera(&camera);
-    Renderer& myRenderer = renderer;
 
     // 2. Playfield Grid & Environment
     Grid gameGrid;
@@ -85,41 +82,26 @@ int main() {
     CollisionSystem collisionSystem;
     CombatSystem combatSystem;
 
-    // 6. Players (Friendly Blue Defenders)
-    MeleePlayer meleePlayer(0);
-    meleePlayer.init(120.0f, gameGrid.getLaneCenterY(0));
-    VertexArray meleeVAO(meleePlayer.getVertices(), meleePlayer.getIndices());
+    // 6. Player Meshes
+    MeleePlayer protoMelee(0);
+    protoMelee.init(0.0f, 0.0f);
+    VertexArray meleeVAO(protoMelee.getVertices(), protoMelee.getIndices());
 
-    RangedPlayer rangedPlayer(1);
-    rangedPlayer.init(120.0f, gameGrid.getLaneCenterY(1));
-    VertexArray rangedVAO(rangedPlayer.getVertices(), rangedPlayer.getIndices());
+    RangedPlayer protoRanged(0);
+    protoRanged.init(0.0f, 0.0f);
+    VertexArray rangedVAO(protoRanged.getVertices(), protoRanged.getIndices());
 
-    DefensePlayer defensePlayer(2);
-    defensePlayer.init(120.0f, gameGrid.getLaneCenterY(2));
-    VertexArray defenseVAO(defensePlayer.getVertices(),
-        defensePlayer.getIndices());
+    DefensePlayer protoDefense(0);
+    protoDefense.init(0.0f, 0.0f);
+    VertexArray defenseVAO(protoDefense.getVertices(), protoDefense.getIndices());
 
-    std::vector<Player*> activePlayers = { &meleePlayer, &rangedPlayer,
-                                           &defensePlayer };
+    std::vector<std::unique_ptr<Player>> spawnedPlayers;
 
     // Player Projectiles
     std::vector<Projectile> playerArrows;
     Projectile arrowProto;
     arrowProto.init(0.0f, 0.0f);
     VertexArray projectileVAO(arrowProto.getVertices(), arrowProto.getIndices());
-
-    // Quad VAO for HealthUI
-    std::vector<float> quadVertices = {
-        0.0f, 0.0f, 0.0f, 1.0f, 1.0f, 1.0f,
-        1.0f, 0.0f, 0.0f, 1.0f, 1.0f, 1.0f,
-        0.0f, 1.0f, 0.0f, 1.0f, 1.0f, 1.0f,
-        1.0f, 1.0f, 0.0f, 1.0f, 1.0f, 1.0f
-    };
-    std::vector<unsigned int> quadIndices = {
-        0, 1, 2,
-        1, 3, 2
-    };
-    VertexArray quadVAO(quadVertices, quadIndices);
 
     // Enemy Entities, Hostile Projectiles & Collectibles
     std::vector<std::unique_ptr<Enemy>> enemies;
@@ -130,13 +112,9 @@ int main() {
     Economy economy(30);
 
     std::vector<PlayerCardUI> unitCards;
-    // Positioned neatly inside the top HUD bar between WAVE and HINTS
-    unitCards.emplace_back(CardUnitType::Melee, 10, glm::vec2(245.0f, 6.0f),
-        glm::vec2(80.0f, 38.0f));
-    unitCards.emplace_back(CardUnitType::Ranged, 15, glm::vec2(335.0f, 6.0f),
-        glm::vec2(80.0f, 38.0f));
-    unitCards.emplace_back(CardUnitType::Defense, 20, glm::vec2(425.0f, 6.0f),
-        glm::vec2(80.0f, 38.0f));
+    unitCards.emplace_back(CardUnitType::Melee, 10, glm::vec2(245.0f, 6.0f), glm::vec2(80.0f, 38.0f));
+    unitCards.emplace_back(CardUnitType::Ranged, 15, glm::vec2(335.0f, 6.0f), glm::vec2(80.0f, 38.0f));
+    unitCards.emplace_back(CardUnitType::Defense, 20, glm::vec2(425.0f, 6.0f), glm::vec2(80.0f, 38.0f));
 
     // Reset helper
     auto restartGame = [&]() {
@@ -151,19 +129,30 @@ int main() {
         enemyProjectiles.clear();
         playerArrows.clear();
         collectibles.clear();
+        spawnedPlayers.clear();
         combatSystem.ResetDefeatedEnemyCount();
 
-        meleePlayer.init(120.0f, gameGrid.getLaneCenterY(0));
-        rangedPlayer.init(120.0f, gameGrid.getLaneCenterY(1));
-        defensePlayer.init(120.0f, gameGrid.getLaneCenterY(2));
+        // Spawn initial starter units
+        auto startMelee = std::make_unique<MeleePlayer>(0);
+        startMelee->init(120.0f, gameGrid.getLaneCenterY(0));
+        startMelee->deploy(120.0f, gameGrid.getLaneCenterY(0), 0);
+        spawnedPlayers.push_back(std::move(startMelee));
+
+        auto startRanged = std::make_unique<RangedPlayer>(1);
+        startRanged->init(120.0f, gameGrid.getLaneCenterY(1));
+        startRanged->deploy(120.0f, gameGrid.getLaneCenterY(1), 1);
+        spawnedPlayers.push_back(std::move(startRanged));
+
+        auto startDefense = std::make_unique<DefensePlayer>(2);
+        startDefense->init(120.0f, gameGrid.getLaneCenterY(2));
+        startDefense->deploy(120.0f, gameGrid.getLaneCenterY(2), 2);
+        spawnedPlayers.push_back(std::move(startDefense));
         };
 
     restartGame();
 
-    // Input state tracking
     bool prevMouseLeft = false;
     bool prevEscKey = false;
-    bool prevSpaceKey = false;
 
     double lastTime = glfwGetTime();
 
@@ -186,8 +175,7 @@ int main() {
         double mouseY = InputManager::getMouseY();
         glm::vec2 mousePos(static_cast<float>(mouseX), static_cast<float>(mouseY));
 
-        bool mouseLeftDown =
-            InputManager::isMouseButtonPressed(GLFW_MOUSE_BUTTON_LEFT);
+        bool mouseLeftDown = InputManager::isMouseButtonPressed(GLFW_MOUSE_BUTTON_LEFT);
         bool mouseClicked = (mouseLeftDown && !prevMouseLeft);
         prevMouseLeft = mouseLeftDown;
 
@@ -196,10 +184,7 @@ int main() {
         prevEscKey = escDown;
 
         bool spaceDown = InputManager::isKeyPressed(GLFW_KEY_SPACE);
-        bool spacePressed = (spaceDown && !prevSpaceKey);
-        prevSpaceKey = spaceDown;
 
-        // Toggle pause on ESC
         if (escPressed && (stateMachine.GetState() == GameState::GAMEPLAY ||
             stateMachine.GetState() == GameState::PAUSED)) {
             stateMachine.TogglePause();
@@ -211,18 +196,17 @@ int main() {
         // STATE UPDATES
         // ==========================================
         if (stateMachine.GetState() == GameState::CUTSCENE) {
-            cutscene.Update(dt, &camera, spacePressed);
+            cutscene.Update(dt, &camera, spaceDown);
             if (cutscene.IsFinished()) {
                 stateMachine.SetState(GameState::GAMEPLAY);
             }
         }
         else if (stateMachine.GetState() == GameState::GAMEPLAY) {
-            // 0. Update Player Cards & Handle Selection
+            // 0. Update Player Cards & Selection
             for (size_t i = 0; i < unitCards.size(); ++i) {
                 unitCards[i].update(economy, mouseX, mouseY);
 
                 if (unitCards[i].handleMouseClick(mouseX, mouseY, mouseLeftDown)) {
-                    // Radio-button behavior: selecting one card deselects the others
                     if (unitCards[i].isSelected()) {
                         for (size_t j = 0; j < unitCards.size(); ++j) {
                             if (i != j) {
@@ -233,7 +217,7 @@ int main() {
                 }
             }
 
-            // 1. Lane Selection (hover and click)
+            // 1. Lane Selection
             laneSelector.update(gameGrid, mouseX, mouseY, mouseClicked);
 
             // 1B. UNIT DEPLOYMENT / RECRUITMENT
@@ -245,65 +229,77 @@ int main() {
                 }
             }
 
-            // If a card is selected and player clicks inside a lane on the playfield (Y > 50)
             if (selectedCard && mouseClicked && mouseY > 50.0f && laneSelector.getHoveredLaneId() != -1) {
                 int targetLane = laneSelector.getHoveredLaneId();
                 float targetY = gameGrid.getLaneCenterY(targetLane);
 
-                // Deduct cost and place unit
                 if (economy.spendCoins(selectedCard->getCost())) {
                     if (selectedCard->getUnitType() == CardUnitType::Melee) {
-                        meleePlayer.init(120.0f, targetY);
+                        auto newUnit = std::make_unique<MeleePlayer>(targetLane);
+                        newUnit->init(120.0f, targetY);
+                        newUnit->deploy(120.0f, targetY, targetLane);
+                        spawnedPlayers.push_back(std::move(newUnit));
                     }
                     else if (selectedCard->getUnitType() == CardUnitType::Ranged) {
-                        rangedPlayer.init(120.0f, targetY);
+                        auto newUnit = std::make_unique<RangedPlayer>(targetLane);
+                        newUnit->init(120.0f, targetY);
+                        newUnit->deploy(120.0f, targetY, targetLane);
+                        spawnedPlayers.push_back(std::move(newUnit));
                     }
                     else if (selectedCard->getUnitType() == CardUnitType::Defense) {
-                        defensePlayer.init(120.0f, targetY);
+                        // Place Defense at cursor's X position within the lane
+                        float placeX = std::clamp(static_cast<float>(mouseX), 120.0f, 740.0f);
+                        auto newUnit = std::make_unique<DefensePlayer>(targetLane);
+                        newUnit->init(placeX, targetY);
+                        newUnit->deploy(placeX, targetY, targetLane);
+                        spawnedPlayers.push_back(std::move(newUnit));
                     }
                 }
 
-                // Deselect card once placement completes
                 selectedCard->setSelected(false);
             }
 
-            // 2. ActionManager handles W (Jump) and S (Duck) for selected lanes
+            // Active players pointer list
+            std::vector<Player*> activePlayers;
+            activePlayers.reserve(spawnedPlayers.size());
+            for (auto& p : spawnedPlayers) {
+                if (p && p->isAlive()) {
+                    activePlayers.push_back(p.get());
+                }
+            }
+
+            // 2. ActionManager: Jump / Duck for selected lanes
             std::vector<int> selectedLanes;
             if (laneSelector.getSelectedLaneId() != -1) {
                 selectedLanes.push_back(laneSelector.getSelectedLaneId());
             }
             ActionManager::handleInput(activePlayers, selectedLanes);
 
-            // Test key to simulate taking damage (K key)
-            static bool wasKPressed = false;
-            bool isKPressed = InputManager::isKeyPressed(GLFW_KEY_K);
-            if (isKPressed && !wasKPressed) {
-                for (Player* p : activePlayers) {
-                    if (p && p->isActive() && p->getLaneId() == laneSelector.getSelectedLaneId()) {
-                        p->takeDamage(1);
-                    }
+            // 3. Update Players
+            for (auto& p : spawnedPlayers) {
+                if (p && p->isAlive()) {
+                    p->update(dt);
                 }
             }
-            wasKPressed = isKPressed;
 
-            // 3. Update Players
-            meleePlayer.update(dt);
-            rangedPlayer.update(dt);
-            defensePlayer.update(dt);
-
-            // 4. Fire Arrow on Spacebar tap
-            if (spacePressed && rangedPlayer.isAlive()) {
-                Projectile arrow;
-                arrow.init(rangedPlayer.getPosition().x + 35.0f,
-                    rangedPlayer.getPosition().y + 24.0f);
-                playerArrows.push_back(arrow);
+            // 4. Fire Arrow with Cooldown
+            if (spaceDown) {
+                for (auto& p : spawnedPlayers) {
+                    if (p && p->isAlive() && dynamic_cast<RangedPlayer*>(p.get())) {
+                        if (p->canAttack()) {
+                            Projectile arrow;
+                            arrow.init(p->getPosition().x + 35.0f, p->getPosition().y + 5.0f);
+                            playerArrows.push_back(arrow);
+                            p->resetAttackCooldown();
+                        }
+                    }
+                }
             }
 
             // 5. Wave Manager Spawning
             EnemyType spawnType;
             int spawnLane = 0;
-            if (waveManager.shouldSpawnEnemy(dt, gameGrid.getLaneCount(), spawnType,
-                spawnLane)) {
+            if (waveManager.shouldSpawnEnemy(dt, gameGrid.getLaneCount(), spawnType, spawnLane)) {
                 float startY = gameGrid.getLaneCenterY(spawnLane);
                 glm::vec2 spawnPos(780.0f, startY);
 
@@ -318,7 +314,6 @@ int main() {
                 }
             }
 
-            // Check if wave enemies are cleared
             if (waveManager.isSpawningFinished() && enemies.empty()) {
                 waveManager.onWaveEnemiesCleared();
                 if (waveManager.isGameWon()) {
@@ -326,7 +321,7 @@ int main() {
                 }
             }
 
-            // 6. Update Enemies & Hostile Projectiles
+            // 6. Update Entities & Projectiles
             for (auto& e : enemies) {
                 if (e)
                     e->Update(dt, enemyProjectiles);
@@ -347,16 +342,11 @@ int main() {
                 stateMachine.TriggerDefeat();
             }
 
-            // Check Unit Encounters
             collisionSystem.CheckPlayerEnemyEncounters(activePlayers, enemies);
-
-            // Check Player Arrow Collisions
             collisionSystem.CheckPlayerArrows(playerArrows, enemies);
 
-            // Check Enemy Projectile Collisions
             int preHealth = homeBase.getHealth();
-            collisionSystem.CheckEnemyProjectiles(enemyProjectiles, activePlayers,
-                homeBase);
+            collisionSystem.CheckEnemyProjectiles(enemyProjectiles, activePlayers, homeBase);
             if (homeBase.getHealth() < preHealth) {
                 camera.TriggerShake(0.2f, 3.5f);
             }
@@ -365,16 +355,33 @@ int main() {
                 stateMachine.TriggerDefeat();
             }
 
-            // Check Collectibles & Sync with Economy
+            // Collectibles: Auto-pickup + Click-to-collect
             int collectedGold = economy.getCoins();
-            collisionSystem.CheckPlayerCollectiblePickups(activePlayers, collectibles,
-                collectedGold);
+            collisionSystem.CheckPlayerCollectiblePickups(activePlayers, collectibles, collectedGold);
+
+            if (mouseClicked) {
+                for (auto& col : collectibles) {
+                    if (!col.IsActive()) continue;
+                    BoundingBox cBox = col.GetBounds();
+                    if (mousePos.x >= cBox.x && mousePos.x <= cBox.x + cBox.width &&
+                        mousePos.y >= cBox.y && mousePos.y <= cBox.y + cBox.height) {
+                        col.Collect();
+                        collectedGold += col.GetValue();
+                    }
+                }
+            }
             economy.setCoins(collectedGold);
 
-            // Run Damage Ticks & Drops
             combatSystem.Update(dt, activePlayers, enemies, collectibles);
 
-            // Cleanup inactive objects
+            // Cleanup dead/inactive instances
+            spawnedPlayers.erase(
+                std::remove_if(spawnedPlayers.begin(), spawnedPlayers.end(),
+                    [](const std::unique_ptr<Player>& p) {
+                        return !p || !p->isAlive();
+                    }),
+                spawnedPlayers.end());
+
             enemyProjectiles.erase(
                 std::remove_if(enemyProjectiles.begin(), enemyProjectiles.end(),
                     [](const EnemyProjectile& ep) {
@@ -441,24 +448,21 @@ int main() {
                 }
             }
 
-            // 3. Home Base (Castle Citadel Gate on the Left)
+            // 3. Home Base (Castle Gate)
             glm::vec4 towerColor =
                 homeBase.hasLostGame()
                 ? glm::vec4(0.65f, 0.15f, 0.15f, 1.0f)
                 : glm::vec4(0.32f, 0.34f, 0.40f, 1.0f);
             renderer.DrawQuad(homeBase.getPosition(), homeBase.getSize(), towerColor);
 
-            // Battlements
             for (int b = 0; b < 6; ++b) {
                 renderer.DrawQuad(glm::vec2(78.0f, 75.0f + b * 75.0f),
                     glm::vec2(20.0f, 35.0f),
                     glm::vec4(0.40f, 0.42f, 0.48f, 1.0f));
             }
-            // Iron Portcullis Gate
             renderer.DrawQuad(glm::vec2(25.0f, 470.0f), glm::vec2(50.0f, 70.0f),
                 glm::vec4(0.18f, 0.18f, 0.22f, 1.0f));
 
-            // Castle Health Bar & Label
             renderer.DrawString("CASTLE HP", glm::vec2(8.0f, 68.0f), 0.82f,
                 glm::vec4(1.0f, 0.90f, 0.30f, 1.0f));
             renderer.DrawHealthBar(glm::vec2(8.0f, 82.0f), glm::vec2(82.0f, 9.0f),
@@ -469,7 +473,7 @@ int main() {
             renderer.DrawString(castleHpNum, glm::vec2(26.0f, 94.0f), 0.75f,
                 glm::vec4(0.95f, 0.95f, 0.95f, 1.0f));
 
-            // Elevated Balcony for Princess Aurelia
+            // Princess Aurelia Balcony
             glm::vec2 balconyPos(24.0f, 175.0f);
             renderer.DrawQuad(balconyPos + glm::vec2(0.0f, 28.0f),
                 glm::vec2(52.0f, 25.0f),
@@ -517,16 +521,25 @@ int main() {
                 col.Render(renderer);
             }
 
-            // 5. Render Players
-            for (Player* p : activePlayers) {
-                if (p && p->isActive()) {
-                    // Render player model with increasing red tint
-                    VertexArray* vao = (p == &meleePlayer) ? &meleeVAO : (p == &rangedPlayer ? &rangedVAO : &defenseVAO);
-                    myRenderer.Draw(*vao, p->getRenderPosition(), glm::vec2(1.0f, 1.0f), 0.0f, p->getDamageTint());
+            // 5. Render All Spawned Players & Their Health Bars
+            for (const auto& p : spawnedPlayers) {
+                if (!p || !p->isAlive()) continue;
 
-                    // Render health bar above player (width = 55.0f)
-                    HealthUI::draw(myRenderer, quadVAO, p->getRenderPosition(), 55.0f, p->getHealth(), p->getMaxHealth());
+                if (dynamic_cast<MeleePlayer*>(p.get())) {
+                    renderer.Draw(meleeVAO, p->getRenderPosition(), glm::vec2(1.0f, 1.0f), 0.0f, glm::vec4(1.0f));
                 }
+                else if (dynamic_cast<RangedPlayer*>(p.get())) {
+                    renderer.Draw(rangedVAO, p->getRenderPosition(), glm::vec2(1.0f, 1.0f), 0.0f, glm::vec4(1.0f));
+                }
+                else if (dynamic_cast<DefensePlayer*>(p.get())) {
+                    renderer.Draw(defenseVAO, p->getRenderPosition(), glm::vec2(1.0f, 1.0f), 0.0f, glm::vec4(1.0f));
+                }
+
+                glm::vec2 rPos = p->getRenderPosition();
+                renderer.DrawHealthBar(glm::vec2(rPos.x + 3.0f, rPos.y - 27.0f),
+                    glm::vec2(30.0f, 5.0f),
+                    p->getHealth(), p->getMaxHealth(),
+                    true);
             }
 
             // 6. Render Player Arrows
@@ -546,34 +559,30 @@ int main() {
                 ep.Render(renderer);
             }
 
-            // 8. HUD Header (Gold, Wave, Unit Cards, Hints)
+            // 8. HUD Header
             renderer.DrawQuad(glm::vec2(0.0f, 0.0f), glm::vec2(screenWidth, 50.0f),
                 glm::vec4(0.08f, 0.10f, 0.15f, 0.90f));
             renderer.DrawQuad(glm::vec2(0.0f, 48.0f), glm::vec2(screenWidth, 2.0f),
                 glm::vec4(0.85f, 0.70f, 0.20f, 1.0f));
 
-            // Current Gold from Economy
             std::string goldStr = "GOLD: " + std::to_string(economy.getCoins());
             renderer.DrawString(goldStr, glm::vec2(14.0f, 16.0f), 1.15f,
                 glm::vec4(1.0f, 0.88f, 0.25f, 1.0f));
 
-            // Current Wave
             std::string waveStr =
                 "WAVE: " + std::to_string(waveManager.getCurrentWave()) + "/3";
             renderer.DrawString(waveStr, glm::vec2(138.0f, 16.0f), 1.15f,
                 glm::vec4(0.90f, 0.90f, 0.95f, 1.0f));
 
-            // Render Player Selection Cards in HUD
             for (const auto& card : unitCards) {
                 card.render(renderer);
             }
 
-            // Control Hints
             renderer.DrawString("[SPACE] SHOOT   [W/S] JUMP/DUCK",
                 glm::vec2(520.0f, 18.0f), 0.72f,
                 glm::vec4(0.70f, 0.75f, 0.85f, 1.0f));
 
-            // 9. Menus Overlay (Pause / Win / Lose)
+            // 9. Menus Overlay
             if (stateMachine.IsPaused() ||
                 stateMachine.GetState() == GameState::GAME_OVER_WIN ||
                 stateMachine.GetState() == GameState::GAME_OVER_LOSE) {

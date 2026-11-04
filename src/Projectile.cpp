@@ -2,7 +2,7 @@
 
 Projectile::Projectile() {
     position = glm::vec2(0.0f, 0.0f);
-    speed = 0.2f;
+    speed = 0.5f;
     damage = 1;
     active = false;
 }

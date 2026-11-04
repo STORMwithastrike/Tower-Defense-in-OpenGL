@@ -4,8 +4,8 @@ DefensePlayer::DefensePlayer(int lane)
     : Player(7, lane) { // 7 hits
     maxHealth = 7;
     health = 7;
-    advanceSpeed = 0.0f; // dosnt move
-    canDodge = false; // or jump
+    advanceSpeed = 0.0f; // doesn't move
+    canDodge = false;    // cannot jump or duck
 }
 
 void DefensePlayer::init(float startX, float startY) {
@@ -54,13 +54,13 @@ void DefensePlayer::generateMesh() {
         indices.push_back(base + 2);
         };
 
-    //Head 
-    addQuad(8.0f, 6.0f, 16.0f, 12.0f, 0.40f, 0.42f, 0.48f);
+    // 1. Head (Centered from -21.0f to -9.0f)
+    addQuad(8.0f, -21.0f, 16.0f, 12.0f, 0.40f, 0.42f, 0.48f);
 
-    //Body 
-    addQuad(6.0f, 18.0f, 18.0f, 24.0f, 0.30f, 0.32f, 0.38f);
+    // 2. Body (Centered from -9.0f to +15.0f)
+    addQuad(6.0f, -9.0f, 18.0f, 24.0f, 0.30f, 0.32f, 0.38f);
 
-    //Shield 
-    addQuad(24.0f, 8.0f, 12.0f, 32.0f, 0.50f, 0.52f, 0.58f);
-    addTriangle(24.0f, 40.0f, 36.0f, 40.0f, 30.0f, 48.0f, 0.50f, 0.52f, 0.58f);
+    // 3. Shield (Quad & Tip centered from -19.0f to +21.0f)
+    addQuad(24.0f, -19.0f, 12.0f, 32.0f, 0.50f, 0.52f, 0.58f);
+    addTriangle(24.0f, 13.0f, 36.0f, 13.0f, 30.0f, 21.0f, 0.50f, 0.52f, 0.58f);
 }
