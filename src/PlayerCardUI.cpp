@@ -79,14 +79,70 @@ void PlayerCardUI::render(Renderer& renderer) const {
     // 2. Draw card background body
     renderer.DrawQuad(m_position, m_size, bgColor);
 
-    // 3. Draw archetype insignia badge
-    glm::vec2 iconSize = glm::vec2(m_size.x * 0.70f, m_size.y * 0.45f);
-    glm::vec2 iconPos = glm::vec2(m_position.x + (m_size.x - iconSize.x) * 0.5f, m_position.y + 8.0f);
-    renderer.DrawQuad(iconPos, iconSize, accentColor);
+    // 3. Draw miniature composite player model in card preview area
+    renderMiniModel(renderer);
 
     // 4. Draw bottom cost bar
     glm::vec2 barSize = glm::vec2(m_size.x * 0.80f, 6.0f);
     glm::vec2 barPos = glm::vec2(m_position.x + (m_size.x - barSize.x) * 0.5f, m_position.y + m_size.y - 12.0f);
     glm::vec4 barColor = m_isAffordable ? glm::vec4(1.0f, 0.84f, 0.0f, 1.0f) : glm::vec4(0.35f, 0.35f, 0.35f, 1.0f);
     renderer.DrawQuad(barPos, barSize, barColor);
+}
+
+void PlayerCardUI::renderMiniModel(Renderer& renderer) const {
+    const float scale = 0.5f;
+    const float centerX = m_position.x + m_size.x * 0.5f;
+    const float centerY = m_position.y + (m_size.y - 12.0f) * 0.5f;
+
+    auto makeColor = [this](float r, float g, float b) -> glm::vec4 {
+        if (!m_isAffordable) {
+            float gray = 0.299f * r + 0.587f * g + 0.114f * b;
+            return glm::vec4(gray, gray, gray, 1.0f);
+        }
+        return glm::vec4(r, g, b, 1.0f);
+    };
+
+    auto drawMiniQuad = [&](float origX, float origY, float origW, float origH, float modelCenterX, float r, float g, float b) {
+        glm::vec2 pos(centerX + (origX - modelCenterX) * scale, centerY + origY * scale);
+        glm::vec2 size(origW * scale, origH * scale);
+        renderer.DrawQuad(pos, size, makeColor(r, g, b));
+    };
+
+    auto drawMiniTriangle = [&](float x1, float y1, float x2, float y2, float x3, float y3, float modelCenterX, float r, float g, float b) {
+        glm::vec2 p1(centerX + (x1 - modelCenterX) * scale, centerY + y1 * scale);
+        glm::vec2 p2(centerX + (x2 - modelCenterX) * scale, centerY + y2 * scale);
+        glm::vec2 p3(centerX + (x3 - modelCenterX) * scale, centerY + y3 * scale);
+        renderer.DrawTriangle(p1, p2, p3, makeColor(r, g, b));
+    };
+
+    if (m_unitType == CardUnitType::Melee) {
+        const float modelCenterX = 28.0f;
+        // 1. Head (Gray Helmet)
+        drawMiniQuad(10.0f, -19.0f, 16.0f, 14.0f, modelCenterX, 0.60f, 0.65f, 0.70f);
+        // 2. Body (Blueish Armor)
+        drawMiniQuad(8.0f, -5.0f, 20.0f, 24.0f, modelCenterX, 0.35f, 0.45f, 0.60f);
+        // 3. Sword (Blade + Tip)
+        drawMiniQuad(28.0f, 3.0f, 14.0f, 4.0f, modelCenterX, 0.85f, 0.85f, 0.90f);
+        drawMiniTriangle(42.0f, 1.0f, 42.0f, 9.0f, 48.0f, 5.0f, modelCenterX, 0.85f, 0.85f, 0.90f);
+    }
+    else if (m_unitType == CardUnitType::Ranged) {
+        const float modelCenterX = 26.0f;
+        // 1. Head
+        drawMiniQuad(9.0f, -19.0f, 16.0f, 14.0f, modelCenterX, 0.30f, 0.30f, 0.35f);
+        // 2. Body
+        drawMiniQuad(8.0f, -5.0f, 18.0f, 24.0f, modelCenterX, 0.52f, 0.35f, 0.20f);
+        // 3. Crossbow (Stock & Prod)
+        drawMiniQuad(26.0f, 3.0f, 18.0f, 4.0f, modelCenterX, 0.24f, 0.14f, 0.08f);
+        drawMiniQuad(38.0f, -5.0f, 4.0f, 20.0f, modelCenterX, 0.30f, 0.30f, 0.35f);
+    }
+    else if (m_unitType == CardUnitType::Defense) {
+        const float modelCenterX = 21.0f;
+        // 1. Head
+        drawMiniQuad(8.0f, -21.0f, 16.0f, 12.0f, modelCenterX, 0.40f, 0.42f, 0.48f);
+        // 2. Body
+        drawMiniQuad(6.0f, -9.0f, 18.0f, 24.0f, modelCenterX, 0.30f, 0.32f, 0.38f);
+        // 3. Shield (Quad & Tip)
+        drawMiniQuad(24.0f, -19.0f, 12.0f, 32.0f, modelCenterX, 0.50f, 0.52f, 0.58f);
+        drawMiniTriangle(24.0f, 13.0f, 36.0f, 13.0f, 30.0f, 21.0f, modelCenterX, 0.50f, 0.52f, 0.58f);
+    }
 }
