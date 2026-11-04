@@ -2,7 +2,7 @@
 
 class Economy {
 public:
-    explicit Economy(int startingCoins = 30);
+    explicit Economy(int startingCoins = 60);
 
     // Coin transactions
     void addCoins(int amount);

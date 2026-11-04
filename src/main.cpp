@@ -109,7 +109,7 @@ int main() {
     std::vector<Collectible> collectibles;
 
     // 7. Economy & Player Cards UI
-    Economy economy(30);
+    Economy economy(60);
 
     std::vector<PlayerCardUI> unitCards;
     unitCards.emplace_back(CardUnitType::Melee, 10, glm::vec2(245.0f, 6.0f), glm::vec2(80.0f, 38.0f));
@@ -131,28 +131,13 @@ int main() {
         collectibles.clear();
         spawnedPlayers.clear();
         combatSystem.ResetDefeatedEnemyCount();
-
-        // Spawn initial starter units
-        auto startMelee = std::make_unique<MeleePlayer>(0);
-        startMelee->init(120.0f, gameGrid.getLaneCenterY(0));
-        startMelee->deploy(120.0f, gameGrid.getLaneCenterY(0), 0);
-        spawnedPlayers.push_back(std::move(startMelee));
-
-        auto startRanged = std::make_unique<RangedPlayer>(1);
-        startRanged->init(120.0f, gameGrid.getLaneCenterY(1));
-        startRanged->deploy(120.0f, gameGrid.getLaneCenterY(1), 1);
-        spawnedPlayers.push_back(std::move(startRanged));
-
-        auto startDefense = std::make_unique<DefensePlayer>(2);
-        startDefense->init(120.0f, gameGrid.getLaneCenterY(2));
-        startDefense->deploy(120.0f, gameGrid.getLaneCenterY(2), 2);
-        spawnedPlayers.push_back(std::move(startDefense));
         };
 
     restartGame();
 
     bool prevMouseLeft = false;
     bool prevEscKey = false;
+    bool prevCKey = false;
 
     double lastTime = glfwGetTime();
 
@@ -184,6 +169,13 @@ int main() {
         prevEscKey = escDown;
 
         bool spaceDown = InputManager::isKeyPressed(GLFW_KEY_SPACE);
+
+        // Debug shortcut: single press of C adds 20 coins
+        bool cDown = InputManager::isKeyPressed(GLFW_KEY_C);
+        if (cDown && !prevCKey) {
+            economy.addCoins(20);
+        }
+        prevCKey = cDown;
 
         if (escPressed && (stateMachine.GetState() == GameState::GAMEPLAY ||
             stateMachine.GetState() == GameState::PAUSED)) {

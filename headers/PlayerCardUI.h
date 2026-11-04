@@ -40,4 +40,5 @@ private:
 	bool m_wasMousePressed;
 
 	bool contains(double x, double y) const;
+	void renderMiniModel(Renderer& renderer) const;
 };
