@@ -58,7 +58,7 @@ void RangedPlayer::generateMesh() {
     addQuad(9.0f, -19.0f, 16.0f, 14.0f, 0.30f, 0.30f, 0.35f);
 
     // Body
-    addQuad(8.0f, -5.0f, 18.0f, 24.0f, 0.52f, 0.35f, 0.20f);
+    addQuad(8.0f, -5.0f, 18.0f, 24.0f, 0.28f, 0.42f, 0.60f);
 
     // Crossboww
     addQuad(26.0f, 3.0f, 18.0f, 4.0f, 0.24f, 0.14f, 0.08f);

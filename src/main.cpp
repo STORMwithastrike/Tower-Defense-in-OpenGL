@@ -63,6 +63,10 @@ int main() {
   Renderer renderer(&mainShader, screenWidth, screenHeight);
   renderer.SetCamera(&camera);
 
+  // Enable alpha blending for UI transparencies and 70% opacity pause background
+  glEnable(GL_BLEND);
+  glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);
+
   // grid and background
   Grid gameGrid;
   gameGrid.init();

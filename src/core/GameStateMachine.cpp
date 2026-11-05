@@ -54,12 +54,13 @@ void GameStateMachine::Update(float dt, const glm::vec2& mousePos, bool mouseCli
         case GameState::PAUSED: {
             pauseMenu.Update(dt, mousePos, mouseClicked);
             PauseMenuAction action = pauseMenu.ConsumeAction();
-            if (action == PauseMenuAction::CONTINUE_GAME) {
+            if (action == PauseMenuAction::RESUME_GAME || action == PauseMenuAction::CONTINUE_GAME) {
                 SetState(GameState::GAMEPLAY);
             } else if (action == PauseMenuAction::RESTART_GAME) {
                 requestRestart = true;
                 SetState(GameState::GAMEPLAY);
             } else if (action == PauseMenuAction::RETURN_TO_MAIN_MENU) {
+                requestRestart = true;
                 SetState(GameState::MAIN_MENU);
             }
             break;

@@ -114,7 +114,7 @@ void PlayerCardUI::renderMiniModel(Renderer& renderer) const {
     else if (unitType == CardUnitType::Ranged) {
         const float modelCenterX = 26.0f;
         drawMiniQuad(9.0f, -19.0f, 16.0f, 14.0f, modelCenterX, 0.30f, 0.30f, 0.35f);
-        drawMiniQuad(8.0f, -5.0f, 18.0f, 24.0f, modelCenterX, 0.52f, 0.35f, 0.20f);
+        drawMiniQuad(8.0f, -5.0f, 18.0f, 24.0f, modelCenterX, 0.28f, 0.42f, 0.60f);
         drawMiniQuad(26.0f, 3.0f, 18.0f, 4.0f, modelCenterX, 0.24f, 0.14f, 0.08f);
         drawMiniQuad(38.0f, -5.0f, 4.0f, 20.0f, modelCenterX, 0.30f, 0.30f, 0.35f);
     }

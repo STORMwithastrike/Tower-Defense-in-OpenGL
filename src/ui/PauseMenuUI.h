@@ -7,7 +7,8 @@
 
 enum class PauseMenuAction {
     NONE = 0,
-    CONTINUE_GAME,
+    RESUME_GAME,
+    CONTINUE_GAME = RESUME_GAME,
     RESTART_GAME,
     RETURN_TO_MAIN_MENU
 };

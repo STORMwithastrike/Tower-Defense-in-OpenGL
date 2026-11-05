@@ -5,16 +5,16 @@ PauseMenuUI::PauseMenuUI(float screenWidth, float screenHeight)
       screenHeight(screenHeight),
       triggeredAction(PauseMenuAction::NONE)
 {
-    float btnWidth = 260.0f;
+    float btnWidth = 280.0f;
     float btnHeight = 44.0f;
     float startX = (screenWidth - btnWidth) * 0.5f;
-    float startY = 230.0f;
-    float spacing = 58.0f;
+    float startY = 220.0f;
+    float spacing = 60.0f;
 
     buttons = {
-        { "CONTINUE",    glm::vec2(startX, startY),                 glm::vec2(btnWidth, btnHeight), PauseMenuAction::CONTINUE_GAME,        false },
-        { "RESTART",     glm::vec2(startX, startY + spacing),       glm::vec2(btnWidth, btnHeight), PauseMenuAction::RESTART_GAME,         false },
-        { "MAIN MENU",   glm::vec2(startX, startY + spacing * 2.0f), glm::vec2(btnWidth, btnHeight), PauseMenuAction::RETURN_TO_MAIN_MENU, false }
+        { "RESUME",              glm::vec2(startX, startY),                  glm::vec2(btnWidth, btnHeight), PauseMenuAction::RESUME_GAME,         false },
+        { "RESTART",             glm::vec2(startX, startY + spacing),        glm::vec2(btnWidth, btnHeight), PauseMenuAction::RESTART_GAME,        false },
+        { "QUIT TO MAIN MENU",   glm::vec2(startX, startY + spacing * 2.0f),  glm::vec2(btnWidth, btnHeight), PauseMenuAction::RETURN_TO_MAIN_MENU, false }
     };
 }
 
@@ -37,37 +37,42 @@ PauseMenuAction PauseMenuUI::ConsumeAction() {
 }
 
 void PauseMenuUI::Render(Renderer& renderer) {
-    // 1. Dark semi-transparent overlay to dim gameplay background
+    // 1. Black background with exactly 70% opacity
     renderer.DrawQuad(glm::vec2(0.0f, 0.0f), glm::vec2(screenWidth, screenHeight),
-                      glm::vec4(0.04f, 0.05f, 0.08f, 0.78f));
+                      glm::vec4(0.0f, 0.0f, 0.0f, 0.70f));
 
-    // 2. Pause Modal Panel
-    glm::vec2 panelPos((screenWidth - 380.0f) * 0.5f, 130.0f);
-    glm::vec2 panelSize(380.0f, 320.0f);
-    renderer.DrawQuad(panelPos - glm::vec2(3.0f, 3.0f), panelSize + glm::vec2(6.0f, 6.0f),
-                      glm::vec4(0.70f, 0.55f, 0.20f, 1.0f)); // Gold trim
-    renderer.DrawQuad(panelPos, panelSize,
-                      glm::vec4(0.12f, 0.14f, 0.20f, 0.95f)); // Stone slate body
+    // 2. Title: GAME PAUSED
+    float titleScale = 1.9f;
+    std::string titleText = "GAME PAUSED";
+    float titleX = (screenWidth - (titleText.length() * 11.0f * titleScale)) * 0.5f;
+    renderer.DrawString(titleText, glm::vec2(titleX, 130.0f), titleScale,
+                        glm::vec4(1.0f, 0.90f, 0.25f, 1.0f));
 
-    // Header Title: GAME PAUSED
-    renderer.DrawString("GAME PAUSED", panelPos + glm::vec2(85.0f, 30.0f),
-                        1.7f, glm::vec4(1.0f, 0.90f, 0.30f, 1.0f));
+    // Subtitle hint
+    std::string hintText = "PRESS ESC TO RESUME";
+    float hintScale = 0.90f;
+    float hintX = (screenWidth - (hintText.length() * 11.0f * hintScale)) * 0.5f;
+    renderer.DrawString(hintText, glm::vec2(hintX, 175.0f), hintScale,
+                        glm::vec4(0.70f, 0.75f, 0.85f, 1.0f));
 
-    // 3. Render Buttons
+    // 3. Render Buttons (stylized identically to MainMenuUI)
     for (const auto& btn : buttons) {
         glm::vec4 borderCol = btn.hovered ? glm::vec4(1.0f, 0.90f, 0.30f, 1.0f)
                                           : glm::vec4(0.40f, 0.40f, 0.45f, 1.0f);
         glm::vec4 bodyCol = btn.hovered ? glm::vec4(0.24f, 0.28f, 0.42f, 1.0f)
-                                        : glm::vec4(0.18f, 0.20f, 0.28f, 1.0f);
+                                        : glm::vec4(0.16f, 0.18f, 0.26f, 1.0f);
         glm::vec4 textCol = btn.hovered ? glm::vec4(1.0f, 1.0f, 0.30f, 1.0f)
-                                        : glm::vec4(0.90f, 0.90f, 0.95f, 1.0f);
+                                        : glm::vec4(0.85f, 0.85f, 0.90f, 1.0f);
 
+        // Border & button body (same styling as main menu)
         renderer.DrawQuad(btn.pos - glm::vec2(2.0f, 2.0f), btn.size + glm::vec2(4.0f, 4.0f), borderCol);
         renderer.DrawQuad(btn.pos, btn.size, bodyCol);
 
-        float textX = btn.pos.x + (btn.size.x - (btn.label.length() * 11.0f * 1.25f)) * 0.5f;
-        float textY = btn.pos.y + 14.0f;
-        renderer.DrawString(btn.label, glm::vec2(textX, textY), 1.25f, textCol);
+        // Center button label text
+        float textScale = (btn.label.length() > 10) ? 1.10f : 1.25f;
+        float textX = btn.pos.x + (btn.size.x - (btn.label.length() * 11.0f * textScale)) * 0.5f;
+        float textY = btn.pos.y + (btn.size.y - (14.0f * textScale)) * 0.5f + 2.0f;
+        renderer.DrawString(btn.label, glm::vec2(textX, textY), textScale, textCol);
     }
 }
 
