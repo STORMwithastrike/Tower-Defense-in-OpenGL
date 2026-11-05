@@ -16,11 +16,12 @@ void MeleePlayer::init(float startX, float startY) {
     generateMesh();
 }
 
+
 void MeleePlayer::generateMesh() {
     vertices.clear();
     indices.clear();
 
-    // Quad helper (x, y, width, height, r, g, b)
+    // helpeersss
     auto addQuad = [this](float x, float y, float w, float h, float r, float g, float b) {
         unsigned int base = static_cast<unsigned int>(vertices.size() / 6);
         float qVerts[] = {
@@ -39,7 +40,7 @@ void MeleePlayer::generateMesh() {
         indices.push_back(base + 2);
         };
 
-    // Triangle helper (x1, y1, x2, y2, x3, y3, r, g, b)
+   
     auto addTriangle = [this](float x1, float y1, float x2, float y2, float x3, float y3, float r, float g, float b) {
         unsigned int base = static_cast<unsigned int>(vertices.size() / 6);
         float tVerts[] = {
@@ -54,15 +55,15 @@ void MeleePlayer::generateMesh() {
         indices.push_back(base + 2);
         };
 
-    // Vertices centered vertically around Y = 0.0f (span: -19.0f to +19.0f)
+    
 
-    // 1. Head (Gray Helmet)
+    // Head 
     addQuad(10.0f, -19.0f, 16.0f, 14.0f, 0.60f, 0.65f, 0.70f);
 
-    // 2. Body (Blueish Armor)
+    //  Body 
     addQuad(8.0f, -5.0f, 20.0f, 24.0f, 0.35f, 0.45f, 0.60f);
 
-    // 3. Sword (Blade + Tip)
+    //  Sword 
     addQuad(28.0f, 3.0f, 14.0f, 4.0f, 0.85f, 0.85f, 0.90f);
     addTriangle(42.0f, 1.0f, 42.0f, 9.0f, 48.0f, 5.0f, 0.85f, 0.85f, 0.90f);
 }
