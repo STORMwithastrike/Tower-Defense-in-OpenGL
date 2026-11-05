@@ -1,4 +1,5 @@
 #include "Enemy.h"
+#include "../headers/HealthUI.h"
 #include <algorithm>
 
 Enemy::Enemy(int lane, const glm::vec2& startPos, EnemyType type, int maxHealth, int damage, float speed)
@@ -54,7 +55,5 @@ BoundingBox Enemy::GetBounds() const {
 }
 
 void Enemy::renderHealthBar(Renderer& renderer, float yOffset) const {
-    glm::vec2 barPos(position.x - 18.0f, position.y + yOffset);
-    glm::vec2 barSize(36.0f, 5.0f);
-    renderer.DrawHealthBar(barPos, barSize, health, maxHealth, true);
+    HealthUI::draw(renderer, position, 0.0f, health, maxHealth, yOffset, 34.0f, 5.0f);
 }

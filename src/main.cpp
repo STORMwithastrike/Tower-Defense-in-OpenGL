@@ -4,6 +4,7 @@
 #include "../headers/Economy.h"
 #include "../headers/Environment.h"
 #include "../headers/Grid.h"
+#include "../headers/HealthUI.h"
 #include "../headers/HomeBase.h"
 #include "../headers/InputManager.h"
 #include "../headers/LaneSelector.h"
@@ -107,9 +108,10 @@ int main() {
     Economy economy(60);
 
     std::vector<PlayerCardUI> unitCards;
-    unitCards.emplace_back(CardUnitType::Melee, 10, glm::vec2(245.0f, 6.0f), glm::vec2(80.0f, 38.0f));
-    unitCards.emplace_back(CardUnitType::Ranged, 15, glm::vec2(335.0f, 6.0f), glm::vec2(80.0f, 38.0f));
-    unitCards.emplace_back(CardUnitType::Defense, 20, glm::vec2(425.0f, 6.0f), glm::vec2(80.0f, 38.0f));
+    // Bottom center card placement: screen is 800 wide, 3 cards centered between X=255 and X=545, Y=548
+    unitCards.emplace_back(CardUnitType::Melee, 10, glm::vec2(255.0f, 548.0f), glm::vec2(86.0f, 44.0f));
+    unitCards.emplace_back(CardUnitType::Ranged, 15, glm::vec2(357.0f, 548.0f), glm::vec2(86.0f, 44.0f));
+    unitCards.emplace_back(CardUnitType::Defense, 20, glm::vec2(459.0f, 548.0f), glm::vec2(86.0f, 44.0f));
 
     auto restartGame = [&]() {
         economy.reset();
@@ -207,7 +209,7 @@ int main() {
                 }
             }
 
-            if (selectedCard && mouseClicked && mouseY > 50.0f && laneSelector.getHoveredLaneId() != -1) {
+            if (selectedCard && mouseClicked && mouseY < 544.0f && laneSelector.getHoveredLaneId() != -1) {
                 int targetLane = laneSelector.getHoveredLaneId();
                 float targetY = gameGrid.getLaneCenterY(targetLane);
 
@@ -410,7 +412,47 @@ int main() {
         glClearColor(0.10f, 0.12f, 0.18f, 1.0f);
         glClear(GL_COLOR_BUFFER_BIT);
 
+        // Helper lambda to draw the gameplay field (lanes, environment, castle base, princess)
+        // Used by BOTH gameplay and cutscene so backgrounds are identical
+        auto renderGameplayField = [&]() {
+            renderer.Draw(gridVAO, glm::vec2(0.0f), glm::vec2(1.0f));
+            renderer.Draw(envVAO, glm::vec2(0.0f), glm::vec2(1.0f));
+
+            // Castle tower & base
+            glm::vec4 towerColor = homeBase.hasLostGame()
+                ? glm::vec4(0.65f, 0.15f, 0.15f, 1.0f)
+                : glm::vec4(0.32f, 0.34f, 0.40f, 1.0f);
+            renderer.DrawQuad(homeBase.getPosition(), homeBase.getSize(), towerColor);
+
+            for (int b = 0; b < 6; ++b) {
+                renderer.DrawQuad(glm::vec2(78.0f, 75.0f + b * 75.0f), glm::vec2(20.0f, 35.0f), glm::vec4(0.40f, 0.42f, 0.48f, 1.0f));
+            }
+            renderer.DrawQuad(glm::vec2(25.0f, 470.0f), glm::vec2(50.0f, 70.0f), glm::vec4(0.18f, 0.18f, 0.22f, 1.0f));
+
+            // Balcony
+            glm::vec2 balconyPos(24.0f, 175.0f);
+            renderer.DrawQuad(balconyPos + glm::vec2(0.0f, 28.0f), glm::vec2(52.0f, 25.0f), glm::vec4(0.38f, 0.40f, 0.46f, 1.0f));
+            renderer.DrawQuad(balconyPos + glm::vec2(-4.0f, 26.0f), glm::vec2(60.0f, 4.0f), glm::vec4(0.85f, 0.70f, 0.20f, 1.0f));
+            renderer.DrawQuad(balconyPos + glm::vec2(4.0f, 38.0f), glm::vec2(44.0f, 52.0f), glm::vec4(0.55f, 0.12f, 0.60f, 1.0f));
+            renderer.DrawQuad(balconyPos + glm::vec2(17.0f, 50.0f), glm::vec2(18.0f, 20.0f), glm::vec4(0.95f, 0.85f, 0.25f, 1.0f));
+
+            // Princess on balcony
+            glm::vec2 princessPos = balconyPos + glm::vec2(26.0f, 16.0f);
+            float pBob = sinf((float)currentTime * 3.0f) * 1.5f;
+            princessPos.y += pBob;
+
+            renderer.DrawQuad(princessPos + glm::vec2(-9.0f, 0.0f), glm::vec2(18.0f, 28.0f), glm::vec4(0.68f, 0.25f, 0.75f, 1.0f));
+            renderer.DrawQuad(princessPos + glm::vec2(-7.0f, -2.0f), glm::vec2(14.0f, 10.0f), glm::vec4(0.95f, 0.80f, 0.25f, 1.0f));
+            renderer.DrawQuad(princessPos + glm::vec2(-5.0f, -14.0f), glm::vec2(10.0f, 12.0f), glm::vec4(0.98f, 0.85f, 0.75f, 1.0f));
+            renderer.DrawQuad(princessPos + glm::vec2(-8.0f, -16.0f), glm::vec2(4.0f, 18.0f), glm::vec4(0.95f, 0.85f, 0.35f, 1.0f));
+            renderer.DrawQuad(princessPos + glm::vec2(4.0f, -16.0f), glm::vec2(4.0f, 18.0f), glm::vec4(0.95f, 0.85f, 0.35f, 1.0f));
+            renderer.DrawTriangle(princessPos + glm::vec2(-5.0f, -15.0f), princessPos + glm::vec2(5.0f, -15.0f), princessPos + glm::vec2(0.0f, -22.0f), glm::vec4(1.0f, 0.85f, 0.20f, 1.0f));
+            renderer.DrawQuad(princessPos + glm::vec2(-3.0f, 5.0f), glm::vec2(6.0f, 4.0f), glm::vec4(0.98f, 0.85f, 0.75f, 1.0f));
+        };
+
         if (stateMachine.GetState() == GameState::CUTSCENE) {
+            // Cutscene rendered directly on top of the gameplay fields
+            renderGameplayField();
             cutscene.Render(renderer);
         }
         else if (stateMachine.GetState() == GameState::MAIN_MENU ||
@@ -418,8 +460,7 @@ int main() {
             stateMachine.RenderMenus(renderer);
         }
         else {
-            renderer.Draw(gridVAO, glm::vec2(0.0f), glm::vec2(1.0f));
-            renderer.Draw(envVAO, glm::vec2(0.0f), glm::vec2(1.0f));
+            renderGameplayField();
 
             // lane selection highlight
             const auto& lanes = gameGrid.getLanes();
@@ -439,48 +480,18 @@ int main() {
                 }
             }
 
-            // castle gate
-            glm::vec4 towerColor = homeBase.hasLostGame()
-                ? glm::vec4(0.65f, 0.15f, 0.15f, 1.0f)
-                : glm::vec4(0.32f, 0.34f, 0.40f, 1.0f);
-            renderer.DrawQuad(homeBase.getPosition(), homeBase.getSize(), towerColor);
-
-            for (int b = 0; b < 6; ++b) {
-                renderer.DrawQuad(glm::vec2(78.0f, 75.0f + b * 75.0f), glm::vec2(20.0f, 35.0f), glm::vec4(0.40f, 0.42f, 0.48f, 1.0f));
-            }
-            renderer.DrawQuad(glm::vec2(25.0f, 470.0f), glm::vec2(50.0f, 70.0f), glm::vec4(0.18f, 0.18f, 0.22f, 1.0f));
-
+            // Castle HP display using HealthUI
             renderer.DrawString("CASTLE HP", glm::vec2(8.0f, 68.0f), 0.82f, glm::vec4(1.0f, 0.90f, 0.30f, 1.0f));
-            renderer.DrawHealthBar(glm::vec2(8.0f, 82.0f), glm::vec2(82.0f, 9.0f), homeBase.getHealth(), homeBase.getMaxHealth(), true);
+            HealthUI::draw(renderer, glm::vec2(8.0f, 82.0f), 82.0f, homeBase.getHealth(), homeBase.getMaxHealth(), 0.0f, 82.0f, 9.0f);
             std::string castleHpNum = std::to_string(homeBase.getHealth()) + " / " + std::to_string(homeBase.getMaxHealth());
             renderer.DrawString(castleHpNum, glm::vec2(26.0f, 94.0f), 0.75f, glm::vec4(0.95f, 0.95f, 0.95f, 1.0f));
-
-            // balcony
-            glm::vec2 balconyPos(24.0f, 175.0f);
-            renderer.DrawQuad(balconyPos + glm::vec2(0.0f, 28.0f), glm::vec2(52.0f, 25.0f), glm::vec4(0.38f, 0.40f, 0.46f, 1.0f));
-            renderer.DrawQuad(balconyPos + glm::vec2(-4.0f, 26.0f), glm::vec2(60.0f, 4.0f), glm::vec4(0.85f, 0.70f, 0.20f, 1.0f));
-            renderer.DrawQuad(balconyPos + glm::vec2(4.0f, 38.0f), glm::vec2(44.0f, 52.0f), glm::vec4(0.55f, 0.12f, 0.60f, 1.0f));
-            renderer.DrawQuad(balconyPos + glm::vec2(17.0f, 50.0f), glm::vec2(18.0f, 20.0f), glm::vec4(0.95f, 0.85f, 0.25f, 1.0f));
-
-            // princess
-            glm::vec2 princessPos = balconyPos + glm::vec2(26.0f, 16.0f);
-            float pBob = sinf((float)currentTime * 3.0f) * 1.5f;
-            princessPos.y += pBob;
-
-            renderer.DrawQuad(princessPos + glm::vec2(-9.0f, 0.0f), glm::vec2(18.0f, 28.0f), glm::vec4(0.68f, 0.25f, 0.75f, 1.0f));
-            renderer.DrawQuad(princessPos + glm::vec2(-7.0f, -2.0f), glm::vec2(14.0f, 10.0f), glm::vec4(0.95f, 0.80f, 0.25f, 1.0f));
-            renderer.DrawQuad(princessPos + glm::vec2(-5.0f, -14.0f), glm::vec2(10.0f, 12.0f), glm::vec4(0.98f, 0.85f, 0.75f, 1.0f));
-            renderer.DrawQuad(princessPos + glm::vec2(-8.0f, -16.0f), glm::vec2(4.0f, 18.0f), glm::vec4(0.95f, 0.85f, 0.35f, 1.0f));
-            renderer.DrawQuad(princessPos + glm::vec2(4.0f, -16.0f), glm::vec2(4.0f, 18.0f), glm::vec4(0.95f, 0.85f, 0.35f, 1.0f));
-            renderer.DrawTriangle(princessPos + glm::vec2(-5.0f, -15.0f), princessPos + glm::vec2(5.0f, -15.0f), princessPos + glm::vec2(0.0f, -22.0f), glm::vec4(1.0f, 0.85f, 0.20f, 1.0f));
-            renderer.DrawQuad(princessPos + glm::vec2(-3.0f, 5.0f), glm::vec2(6.0f, 4.0f), glm::vec4(0.98f, 0.85f, 0.75f, 1.0f));
 
             // collectibles
             for (auto& col : collectibles) {
                 col.Render(renderer);
             }
 
-            // draw players and health bars
+            // draw players and health bars via HealthUI
             for (const auto& p : spawnedPlayers) {
                 if (!p || !p->isAlive()) continue;
 
@@ -495,7 +506,7 @@ int main() {
                 }
 
                 glm::vec2 rPos = p->getRenderPosition();
-                renderer.DrawHealthBar(glm::vec2(rPos.x + 3.0f, rPos.y - 27.0f), glm::vec2(30.0f, 5.0f), p->getHealth(), p->getMaxHealth(), true);
+                HealthUI::draw(renderer, rPos, 20.0f, p->getHealth(), p->getMaxHealth(), -25.0f, 32.0f, 5.0f);
             }
 
             for (auto& arrow : playerArrows) {
@@ -511,21 +522,25 @@ int main() {
                 ep.Render(renderer);
             }
 
-            // HUD
-            renderer.DrawQuad(glm::vec2(0.0f, 0.0f), glm::vec2(screenWidth, 50.0f), glm::vec4(0.08f, 0.10f, 0.15f, 0.90f));
-            renderer.DrawQuad(glm::vec2(0.0f, 48.0f), glm::vec2(screenWidth, 2.0f), glm::vec4(0.85f, 0.70f, 0.20f, 1.0f));
+            // Top HUD Bar (Gold, Waves, Controls hint)
+            renderer.DrawQuad(glm::vec2(0.0f, 0.0f), glm::vec2(screenWidth, 46.0f), glm::vec4(0.08f, 0.10f, 0.15f, 0.90f));
+            renderer.DrawQuad(glm::vec2(0.0f, 44.0f), glm::vec2(screenWidth, 2.0f), glm::vec4(0.85f, 0.70f, 0.20f, 1.0f));
 
             std::string goldStr = "GOLD: " + std::to_string(economy.getCoins());
-            renderer.DrawString(goldStr, glm::vec2(14.0f, 16.0f), 1.15f, glm::vec4(1.0f, 0.88f, 0.25f, 1.0f));
+            renderer.DrawString(goldStr, glm::vec2(20.0f, 14.0f), 1.15f, glm::vec4(1.0f, 0.88f, 0.25f, 1.0f));
 
             std::string waveStr = "WAVE: " + std::to_string(waveManager.getCurrentWave()) + "/3";
-            renderer.DrawString(waveStr, glm::vec2(138.0f, 16.0f), 1.15f, glm::vec4(0.90f, 0.90f, 0.95f, 1.0f));
+            renderer.DrawString(waveStr, glm::vec2(160.0f, 14.0f), 1.15f, glm::vec4(0.90f, 0.90f, 0.95f, 1.0f));
+
+            renderer.DrawString("[SPACE] SHOOT   [W/S] JUMP/DUCK", glm::vec2(470.0f, 16.0f), 0.72f, glm::vec4(0.70f, 0.75f, 0.85f, 1.0f));
+
+            // Player Cards placed at bottom center
+            renderer.DrawQuad(glm::vec2(245.0f, 542.0f), glm::vec2(310.0f, 56.0f), glm::vec4(0.08f, 0.10f, 0.15f, 0.90f));
+            renderer.DrawQuad(glm::vec2(245.0f, 542.0f), glm::vec2(310.0f, 2.0f), glm::vec4(0.85f, 0.70f, 0.20f, 0.85f));
 
             for (const auto& card : unitCards) {
                 card.render(renderer);
             }
-
-            renderer.DrawString("[SPACE] SHOOT   [W/S] JUMP/DUCK", glm::vec2(520.0f, 18.0f), 0.72f, glm::vec4(0.70f, 0.75f, 0.85f, 1.0f));
 
             if (stateMachine.IsPaused() ||
                 stateMachine.GetState() == GameState::GAME_OVER_WIN ||
