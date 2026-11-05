@@ -17,6 +17,7 @@ void WaveManager::startWave(int waveNumber) {
     m_enemiesSpawned = 0;
     m_spawnTimer = 0.0f;
     m_isSpawningFinished = false;
+	m_isGameWon = false;
 
     if (m_currentWave == 1) {
         m_enemiesInCurrentWave = 3;
