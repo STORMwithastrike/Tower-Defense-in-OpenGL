@@ -2,18 +2,18 @@
 
 PlayerCardUI::PlayerCardUI(CardUnitType unitType, int cost, const glm::vec2& position, const glm::vec2& size)
     : unitType(unitType),
-    cost(cost),
-    position(position),
-    size(size),
-    affordable(false),
-    hovered(false),
-    selected(false),
-    wasMousePressed(false) {
+      cost(cost),
+      position(position),
+      size(size),
+      affordable(false),
+      hovered(false),
+      selected(false),
+      wasMousePressed(false) {
 }
 
 bool PlayerCardUI::contains(double x, double y) const {
     return (x >= position.x && x <= position.x + size.x &&
-        y >= position.y && y <= position.y + size.y);
+            y >= position.y && y <= position.y + size.y);
 }
 
 void PlayerCardUI::update(const Economy& economy, double mouseX, double mouseY) {
@@ -89,20 +89,20 @@ void PlayerCardUI::renderMiniModel(Renderer& renderer) const {
             return glm::vec4(gray, gray, gray, 1.0f);
         }
         return glm::vec4(r, g, b, 1.0f);
-        };
+    };
 
     auto drawMiniQuad = [&](float origX, float origY, float origW, float origH, float modelCenterX, float r, float g, float b) {
         glm::vec2 pos(centerX + (origX - modelCenterX) * scale, centerY + origY * scale);
         glm::vec2 sz(origW * scale, origH * scale);
         renderer.DrawQuad(pos, sz, makeColor(r, g, b));
-        };
+    };
 
     auto drawMiniTriangle = [&](float x1, float y1, float x2, float y2, float x3, float y3, float modelCenterX, float r, float g, float b) {
         glm::vec2 p1(centerX + (x1 - modelCenterX) * scale, centerY + y1 * scale);
         glm::vec2 p2(centerX + (x2 - modelCenterX) * scale, centerY + y2 * scale);
         glm::vec2 p3(centerX + (x3 - modelCenterX) * scale, centerY + y3 * scale);
         renderer.DrawTriangle(p1, p2, p3, makeColor(r, g, b));
-        };
+    };
 
     if (unitType == CardUnitType::Melee) {
         const float modelCenterX = 28.0f;
