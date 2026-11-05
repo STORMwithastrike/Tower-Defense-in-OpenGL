@@ -1,4 +1,5 @@
 #include "../headers/Player.h"
+#include <cmath>
 
 Player::Player(int maxHp, int lane)
     : Entity(maxHp, lane),
@@ -12,7 +13,10 @@ Player::Player(int maxHp, int lane)
     visualYOffset(0.0f),
     isFighting(false),
     attackCooldown(0.0f),
-    attackInterval(0.65f) { 
+    attackInterval(0.65f),
+    isAttacking(false),
+    attackTimer(0.0f),
+    rotation(0.0f) {
 }
 
 void Player::jump() {
@@ -36,12 +40,10 @@ void Player::duck() {
 void Player::update(float dt) {
     if (!active) return;
 
-    
     if (!isFighting) {
         position.x += advanceSpeed * dt;
     }
 
-    
     if (isJumping || isDucking) {
         actionTimer -= dt;
         if (actionTimer <= 0.0f) {
@@ -53,7 +55,19 @@ void Player::update(float dt) {
 
     if (attackCooldown > 0.0f) {
         attackCooldown -= dt;
-    }}
+    }
+
+    if (isAttacking) {
+        attackTimer += dt;
+        rotation = std::sin((attackTimer / 0.2f) * 3.14159265f) * 40.0f;
+
+        if (attackTimer >= 0.2f) {
+            isAttacking = false;
+            attackTimer = 0.0f;
+            rotation = 0.0f;
+        }
+    }
+}
 
 glm::vec2 Player::getRenderPosition() const {
     return glm::vec2(position.x, position.y + visualYOffset);
@@ -70,5 +84,7 @@ void Player::deploy(float startX, float startY, int newLane) {
     visualYOffset = 0.0f;
     isFighting = false;
     attackCooldown = 0.0f;
-
+    isAttacking = false;
+    attackTimer = 0.0f;
+    rotation = 0.0f;
 }

@@ -256,19 +256,33 @@ int main() {
 
             for (auto& p : spawnedPlayers) {
                 if (p && p->isAlive()) {
+                    // Auto attack animation for melee while in combat
+                    if (p->getIsFighting() && p->canAttack() && dynamic_cast<MeleePlayer*>(p.get())) {
+                        p->attack();
+                        p->resetAttackCooldown();
+                    }
                     p->update(dt);
                 }
             }
 
-            // shoot arrow with cooldown
+            // attack input (spacebar)
             if (spaceDown) {
                 for (auto& p : spawnedPlayers) {
-                    if (p && p->isAlive() && dynamic_cast<RangedPlayer*>(p.get())) {
-                        if (p->canAttack()) {
-                            Projectile arrow;
-                            arrow.init(p->getPosition().x + 35.0f, p->getPosition().y + 5.0f);
-                            playerArrows.push_back(arrow);
-                            p->resetAttackCooldown();
+                    if (p && p->isAlive()) {
+                        if (dynamic_cast<RangedPlayer*>(p.get())) {
+                            if (p->canAttack()) {
+                                Projectile arrow;
+                                arrow.init(p->getPosition().x + 35.0f, p->getPosition().y + 5.0f);
+                                playerArrows.push_back(arrow);
+                                p->resetAttackCooldown();
+                                p->attack();
+                            }
+                        }
+                        else if (dynamic_cast<MeleePlayer*>(p.get())) {
+                            if (p->canAttack()) {
+                                p->attack();
+                                p->resetAttackCooldown();
+                            }
                         }
                     }
                 }
@@ -471,10 +485,10 @@ int main() {
                 if (!p || !p->isAlive()) continue;
 
                 if (dynamic_cast<MeleePlayer*>(p.get())) {
-                    renderer.Draw(meleeVAO, p->getRenderPosition(), glm::vec2(1.0f, 1.0f), 0.0f, glm::vec4(1.0f));
+                    renderer.Draw(meleeVAO, p->getRenderPosition(), glm::vec2(1.0f, 1.0f), 0.0f, glm::vec4(1.0f), p->getRotation());
                 }
                 else if (dynamic_cast<RangedPlayer*>(p.get())) {
-                    renderer.Draw(rangedVAO, p->getRenderPosition(), glm::vec2(1.0f, 1.0f), 0.0f, glm::vec4(1.0f));
+                    renderer.Draw(rangedVAO, p->getRenderPosition(), glm::vec2(1.0f, 1.0f), 0.0f, glm::vec4(1.0f), p->getRotation());
                 }
                 else if (dynamic_cast<DefensePlayer*>(p.get())) {
                     renderer.Draw(defenseVAO, p->getRenderPosition(), glm::vec2(1.0f, 1.0f), 0.0f, glm::vec4(1.0f));

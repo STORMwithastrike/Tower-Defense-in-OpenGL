@@ -1,5 +1,4 @@
 #pragma once
-
 #include "Entity.h"
 #include <glm/glm.hpp>
 
@@ -19,6 +18,11 @@ protected:
     bool isFighting;
     float attackCooldown;
     float attackInterval;
+
+    // Attack rotation animation
+    bool isAttacking = false;
+    float attackTimer = 0.0f;
+    float rotation = 0.0f;
 
 public:
     Player(int maxHp = 5, int lane = 0);
@@ -42,6 +46,13 @@ public:
     void jump();
     void duck();
     void update(float dt);
+
+    // Trigger attack animation and get current rotation
+    void attack() {
+        isAttacking = true;
+        attackTimer = 0.0f;
+    }
+    float getRotation() const { return rotation; }
 
     glm::vec2 getRenderPosition() const;
 
