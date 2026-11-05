@@ -135,19 +135,26 @@ void CutsceneManager::renderHeroKnight(Renderer& renderer, const glm::vec2& pos)
 }
 
 void CutsceneManager::renderVillainKnight(Renderer& renderer, const glm::vec2& pos) {
-    // Exact gameplay Enemy model (matches player geometry, facing left with Red clothing)
-    // 1. Head
+    // Exactly like the player Melee model, with minor enemy changes:
+    // Red clothing, a triangle hat on the head, and an axe weapon (2 basic shapes)
+    // 1. Head (quad) + Hat (triangle)
     renderer.DrawQuad(pos + glm::vec2(-26.0f, -19.0f), glm::vec2(16.0f, 14.0f),
-                      glm::vec4(0.60f, 0.65f, 0.70f, 1.0f));
+                      glm::vec4(0.50f, 0.50f, 0.55f, 1.0f));
+    renderer.DrawTriangle(pos + glm::vec2(-26.0f, -19.0f),
+                          pos + glm::vec2(-10.0f, -19.0f),
+                          pos + glm::vec2(-18.0f, -27.0f),
+                          glm::vec4(0.75f, 0.15f, 0.15f, 1.0f));
+
     // 2. Body (Enemy Red clothing)
     renderer.DrawQuad(pos + glm::vec2(-28.0f, -5.0f), glm::vec2(20.0f, 24.0f),
                       glm::vec4(0.75f, 0.15f, 0.15f, 1.0f));
-    // 3. Sword (pointing left towards hero)
+
+    // 3. Weapon: Battleaxe (Handle quad + blade triangle, animated with villainSlash)
     renderer.DrawQuad(pos + glm::vec2(-42.0f, 3.0f + villainSlash), glm::vec2(14.0f, 4.0f),
-                      glm::vec4(0.85f, 0.85f, 0.90f, 1.0f));
-    renderer.DrawTriangle(pos + glm::vec2(-42.0f, 1.0f + villainSlash),
-                          pos + glm::vec2(-42.0f, 9.0f + villainSlash),
-                          pos + glm::vec2(-48.0f, 5.0f + villainSlash),
+                      glm::vec4(0.50f, 0.35f, 0.25f, 1.0f));
+    renderer.DrawTriangle(pos + glm::vec2(-42.0f, -5.0f + villainSlash),
+                          pos + glm::vec2(-42.0f, 13.0f + villainSlash),
+                          pos + glm::vec2(-50.0f, 4.0f + villainSlash),
                           glm::vec4(0.85f, 0.85f, 0.90f, 1.0f));
 }
 
