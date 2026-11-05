@@ -1,51 +1,49 @@
 #include <glad/glad.h>
-#include "../headers/ActionManager.h"
-#include "../headers/DefensePlayer.h"
-#include "../headers/Economy.h"
-#include "../headers/Environment.h"
-#include "../headers/Grid.h"
-#include "../headers/HomeBase.h"
-#include "../headers/InputManager.h"
-#include "../headers/LaneSelector.h"
-#include "../headers/MeleePlayer.h"
-#include "../headers/Player.h"
-#include "../headers/PlayerCardUI.h"
-#include "../headers/Projectile.h"
-#include "../headers/RangedPlayer.h"
-#include "../headers/WaveManager.h"
-#include "../headers/Window.h"
+#include <algorithm>
+#include <cmath>
+#include <cstdlib>
+#include <iostream>
+#include <memory>
+#include <vector>
+#include <glm/glm.hpp>
 
+#include "../headers/Window.h"
+#include "../headers/InputManager.h"
+#include "../headers/Grid.h"
+#include "../headers/Environment.h"
+#include "../headers/HomeBase.h"
+#include "../headers/LaneSelector.h"
+#include "../headers/Economy.h"
+#include "../headers/WaveManager.h"
+#include "../headers/PlayerCardUI.h"
+#include "../headers/ActionManager.h"
+#include "../headers/Player.h"
+#include "../headers/MeleePlayer.h"
+#include "../headers/RangedPlayer.h"
+#include "../headers/DefensePlayer.h"
+#include "../headers/Projectile.h"
+
+#include "render/Shader.h"
 #include "render/Camera.h"
 #include "render/Renderer.h"
-#include "render/Shader.h"
 #include "render/VertexArray.h"
-
-#include "core/CutsceneManager.h"
 #include "core/GameStateMachine.h"
-
+#include "core/CutsceneManager.h"
 #include "game/Collectible.h"
 #include "game/CollisionSystem.h"
 #include "game/CombatSystem.h"
 #include "game/EasyEnemy.h"
-#include "game/EnemyProjectile.h"
-#include "game/HardEnemy.h"
 #include "game/MediumEnemy.h"
-
-#include <algorithm>
-#include <cmath>
-#include <cstdlib>
-#include <glm/glm.hpp>
-#include <iostream>
-#include <memory>
-#include <vector>
+#include "game/HardEnemy.h"
+#include "game/EnemyProjectile.h"
 
 int main() {
     const float screenWidth = 800.0f;
     const float screenHeight = 600.0f;
 
-    Window gameWindow((int)screenWidth, (int)screenHeight);
+    Window gameWindow(800, 600);
     if (!gameWindow.initialize("Castle Defense - Protect the Princess")) {
-        std::cerr << "Failed to initialize Game Window!" << std::endl;
+        std::cerr << "failed to init window\n";
         return -1;
     }
 
@@ -59,6 +57,7 @@ int main() {
     Renderer renderer(&mainShader, screenWidth, screenHeight);
     renderer.SetCamera(&camera);
 
+    // el grid wel background
     Grid gameGrid;
     gameGrid.init();
     VertexArray gridVAO(gameGrid.getVertices(), gameGrid.getIndices());
@@ -77,6 +76,7 @@ int main() {
     CollisionSystem collisionSystem;
     CombatSystem combatSystem;
 
+    // meshes l kol player type
     MeleePlayer protoMelee(0);
     protoMelee.init(0.0f, 0.0f);
     VertexArray meleeVAO(protoMelee.getVertices(), protoMelee.getIndices());
@@ -91,6 +91,7 @@ int main() {
 
     std::vector<std::unique_ptr<Player>> spawnedPlayers;
 
+    // mesh l el arrow
     std::vector<Projectile> playerArrows;
     Projectile arrowProto;
     arrowProto.init(0.0f, 0.0f);
@@ -109,10 +110,7 @@ int main() {
 
     auto restartGame = [&]() {
         economy.reset();
-        for (auto& card : unitCards) {
-            card.setSelected(false);
-        }
-
+        for (auto& card : unitCards) card.setSelected(false);
         homeBase.reset();
         waveManager.startWave(1);
         enemies.clear();
@@ -128,7 +126,6 @@ int main() {
     bool prevMouseLeft = false;
     bool prevEscKey = false;
     bool prevCKey = false;
-
     double lastTime = glfwGetTime();
 
     while (!gameWindow.shouldClose() && !stateMachine.WantsExit()) {
@@ -156,15 +153,14 @@ int main() {
 
         bool spaceDown = InputManager::isKeyPressed(GLFW_KEY_SPACE);
 
-        // debug add coins
+        // shortcut c byzawed 20 coins
         bool cDown = InputManager::isKeyPressed(GLFW_KEY_C);
         if (cDown && !prevCKey) {
             economy.addCoins(20);
         }
         prevCKey = cDown;
 
-        if (escPressed && (stateMachine.GetState() == GameState::GAMEPLAY ||
-            stateMachine.GetState() == GameState::PAUSED)) {
+        if (escPressed && (stateMachine.GetState() == GameState::GAMEPLAY || stateMachine.GetState() == GameState::PAUSED)) {
             stateMachine.TogglePause();
         }
 
@@ -177,15 +173,13 @@ int main() {
             }
         }
         else if (stateMachine.GetState() == GameState::GAMEPLAY) {
+            // update el cards
             for (size_t i = 0; i < unitCards.size(); ++i) {
                 unitCards[i].update(economy, mouseX, mouseY);
-
                 if (unitCards[i].handleMouseClick(mouseX, mouseY, mouseLeftDown)) {
                     if (unitCards[i].isSelected()) {
                         for (size_t j = 0; j < unitCards.size(); ++j) {
-                            if (i != j) {
-                                unitCards[j].setSelected(false);
-                            }
+                            if (i != j) unitCards[j].setSelected(false);
                         }
                     }
                 }
@@ -193,6 +187,7 @@ int main() {
 
             laneSelector.update(gameGrid, mouseX, mouseY, mouseClicked);
 
+            // law feh card selected byeshtry w y7ot el unit f el lane
             PlayerCardUI* selectedCard = nullptr;
             for (auto& card : unitCards) {
                 if (card.isSelected()) {
@@ -229,26 +224,27 @@ int main() {
                         spawnedPlayers.push_back(std::move(newUnit));
                     }
                 }
-
                 selectedCard->setSelected(false);
             }
 
             std::vector<Player*> activePlayers;
             activePlayers.reserve(spawnedPlayers.size());
             for (auto& p : spawnedPlayers) {
-                if (p && p->isAlive()) {
+                if (p->isAlive()) {
                     activePlayers.push_back(p.get());
                 }
             }
 
+            // jump aw duck f el lane el selected
             std::vector<int> selectedLanes;
             if (laneSelector.getSelectedLaneId() != -1) {
                 selectedLanes.push_back(laneSelector.getSelectedLaneId());
             }
             ActionManager::handleInput(activePlayers, selectedLanes);
 
+            // el melee bydrb automatic
             for (auto& p : spawnedPlayers) {
-                if (p && p->isAlive()) {
+                if (p->isAlive()) {
                     if (p->getIsFighting() && p->canAttack() && dynamic_cast<MeleePlayer*>(p.get())) {
                         p->attack();
                         p->resetAttackCooldown();
@@ -257,28 +253,30 @@ int main() {
                 }
             }
 
+            // space 3shan el shoot aw el melee attack
             if (spaceDown) {
                 for (auto& p : spawnedPlayers) {
-                    if (p && p->isAlive()) {
-                        if (dynamic_cast<RangedPlayer*>(p.get())) {
-                            if (p->canAttack()) {
-                                Projectile arrow;
-                                arrow.init(p->getPosition().x + 35.0f, p->getPosition().y + 5.0f);
-                                playerArrows.push_back(arrow);
-                                p->resetAttackCooldown();
-                                p->attack();
-                            }
+                    if (!p->isAlive()) continue;
+
+                    if (dynamic_cast<RangedPlayer*>(p.get())) {
+                        if (p->canAttack()) {
+                            Projectile arrow;
+                            arrow.init(p->getPosition().x + 35.0f, p->getPosition().y + 5.0f);
+                            playerArrows.push_back(arrow);
+                            p->resetAttackCooldown();
+                            p->attack();
                         }
-                        else if (dynamic_cast<MeleePlayer*>(p.get())) {
-                            if (p->canAttack()) {
-                                p->attack();
-                                p->resetAttackCooldown();
-                            }
+                    }
+                    else if (dynamic_cast<MeleePlayer*>(p.get())) {
+                        if (p->canAttack()) {
+                            p->attack();
+                            p->resetAttackCooldown();
                         }
                     }
                 }
             }
 
+            // spawn el enemies
             EnemyType spawnType;
             int spawnLane = 0;
             if (waveManager.shouldSpawnEnemy(dt, gameGrid.getLaneCount(), spawnType, spawnLane)) {
@@ -303,18 +301,12 @@ int main() {
                 }
             }
 
-            for (auto& e : enemies) {
-                if (e) e->Update(dt, enemyProjectiles);
-            }
-            for (auto& ep : enemyProjectiles) {
-                ep.Update(dt);
-            }
+            for (auto& e : enemies) e->Update(dt, enemyProjectiles);
+            for (auto& ep : enemyProjectiles) ep.Update(dt);
             for (auto& arrow : playerArrows) {
                 if (arrow.isActive()) arrow.update();
             }
-            for (auto& col : collectibles) {
-                col.Update(dt);
-            }
+            for (auto& col : collectibles) col.Update(dt);
 
             if (collisionSystem.CheckHomeBaseBreach(enemies, homeBase)) {
                 stateMachine.TriggerDefeat();
@@ -333,6 +325,7 @@ int main() {
                 stateMachine.TriggerDefeat();
             }
 
+            // gold collection
             int collectedGold = economy.getCoins();
             collisionSystem.CheckPlayerCollectiblePickups(activePlayers, collectibles, collectedGold);
 
@@ -351,41 +344,25 @@ int main() {
 
             combatSystem.Update(dt, activePlayers, enemies, collectibles);
 
-            // cleanup inactive entities
+            // bnmse7 el dead units wel projectiles
             for (auto it = spawnedPlayers.begin(); it != spawnedPlayers.end(); ) {
-                if (!(*it) || !(*it)->isAlive()) {
-                    it = spawnedPlayers.erase(it);
-                }
-                else {
-                    ++it;
-                }
+                if (!(*it)->isAlive()) it = spawnedPlayers.erase(it);
+                else ++it;
             }
 
             for (auto it = enemyProjectiles.begin(); it != enemyProjectiles.end(); ) {
-                if (!it->IsActive()) {
-                    it = enemyProjectiles.erase(it);
-                }
-                else {
-                    ++it;
-                }
+                if (!it->IsActive()) it = enemyProjectiles.erase(it);
+                else ++it;
             }
 
             for (auto it = playerArrows.begin(); it != playerArrows.end(); ) {
-                if (!it->isActive()) {
-                    it = playerArrows.erase(it);
-                }
-                else {
-                    ++it;
-                }
+                if (!it->isActive()) it = playerArrows.erase(it);
+                else ++it;
             }
 
             for (auto it = collectibles.begin(); it != collectibles.end(); ) {
-                if (!it->IsActive()) {
-                    it = collectibles.erase(it);
-                }
-                else {
-                    ++it;
-                }
+                if (!it->IsActive()) it = collectibles.erase(it);
+                else ++it;
             }
         }
         else {
@@ -409,6 +386,7 @@ int main() {
             renderer.Draw(gridVAO, glm::vec2(0.0f), glm::vec2(1.0f));
             renderer.Draw(envVAO, glm::vec2(0.0f), glm::vec2(1.0f));
 
+            // draw el lanes el selected wel hover
             const auto& lanes = gameGrid.getLanes();
             for (const auto& lane : lanes) {
                 glm::vec2 pos(lane.minX, lane.minY);
@@ -426,6 +404,7 @@ int main() {
                 }
             }
 
+            // draw el castle
             glm::vec4 towerColor = homeBase.hasLostGame()
                 ? glm::vec4(0.65f, 0.15f, 0.15f, 1.0f)
                 : glm::vec4(0.32f, 0.34f, 0.40f, 1.0f);
@@ -447,6 +426,7 @@ int main() {
             renderer.DrawQuad(balconyPos + glm::vec2(4.0f, 38.0f), glm::vec2(44.0f, 52.0f), glm::vec4(0.55f, 0.12f, 0.60f, 1.0f));
             renderer.DrawQuad(balconyPos + glm::vec2(17.0f, 50.0f), glm::vec2(18.0f, 20.0f), glm::vec4(0.95f, 0.85f, 0.25f, 1.0f));
 
+            // princess animation
             glm::vec2 princessPos = balconyPos + glm::vec2(26.0f, 16.0f);
             float pBob = sinf((float)currentTime * 3.0f) * 1.5f;
             princessPos.y += pBob;
@@ -463,8 +443,9 @@ int main() {
                 col.Render(renderer);
             }
 
+            // draw players wel health bar
             for (const auto& p : spawnedPlayers) {
-                if (!p || !p->isAlive()) continue;
+                if (!p->isAlive()) continue;
 
                 if (dynamic_cast<MeleePlayer*>(p.get())) {
                     renderer.Draw(meleeVAO, p->getRenderPosition(), glm::vec2(1.0f, 1.0f), 0.0f, glm::vec4(1.0f), p->getRotation());
@@ -493,7 +474,7 @@ int main() {
                 ep.Render(renderer);
             }
 
-            // HUD
+            // hud
             renderer.DrawQuad(glm::vec2(0.0f, 0.0f), glm::vec2(screenWidth, 50.0f), glm::vec4(0.08f, 0.10f, 0.15f, 0.90f));
             renderer.DrawQuad(glm::vec2(0.0f, 48.0f), glm::vec2(screenWidth, 2.0f), glm::vec4(0.85f, 0.70f, 0.20f, 1.0f));
 
