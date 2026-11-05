@@ -27,6 +27,7 @@
 #include "game/Collectible.h"
 #include "game/CollisionSystem.h"
 #include "game/CombatSystem.h"
+#include "game/Enemy.h"
 #include "game/EasyEnemy.h"
 #include "game/EnemyProjectile.h"
 #include "game/HardEnemy.h"
