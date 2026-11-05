@@ -2,38 +2,38 @@
 #include <cstdlib>
 
 WaveManager::WaveManager()
-    : m_currentWave(1),
-    m_enemiesSpawned(0),
-    m_enemiesInCurrentWave(3),
-    m_spawnTimer(0.0f),
-    m_spawnInterval(2.0f),
-    m_isSpawningFinished(false),
-    m_isGameWon(false) {
+    : currentWave(1),
+    enemiesSpawned(0),
+    enemiesInCurrentWave(3),
+    spawnTimer(0.0f),
+    spawnInterval(2.0f),
+    spawningFinished(false),
+    gameWon(false) {
     startWave(1);
 }
 
 void WaveManager::startWave(int waveNumber) {
-    m_currentWave = waveNumber;
-    m_enemiesSpawned = 0;
-    m_spawnTimer = 0.0f;
-    m_isSpawningFinished = false;
-	m_isGameWon = false;
+    currentWave = waveNumber;
+    enemiesSpawned = 0;
+    spawnTimer = 0.0f;
+    spawningFinished = false;
+    gameWon = false;
 
-    if (m_currentWave == 1) {
-        m_enemiesInCurrentWave = 3;
-        m_spawnInterval = 2.0f; // Fast opening wave
+    if (currentWave == 1) {
+        enemiesInCurrentWave = 3;
+        spawnInterval = 2.0f;
     }
-    else if (m_currentWave == 2) { // Fixed == comparison
-        m_enemiesInCurrentWave = 5;
-        m_spawnInterval = 1.6f; // Snappier spawns so wave 2 doesn't drag
+    else if (currentWave == 2) {
+        enemiesInCurrentWave = 5;
+        spawnInterval = 1.6f;
     }
-    else if (m_currentWave == 3) { // Fixed == comparison
-        m_enemiesInCurrentWave = 7; // Tuned down from 10 to keep the final push intense but brisk
-        m_spawnInterval = 1.3f;
+    else if (currentWave == 3) {
+        enemiesInCurrentWave = 7;
+        spawnInterval = 1.3f;
     }
     else {
-        m_enemiesInCurrentWave = 0;
-        m_isSpawningFinished = true;
+        enemiesInCurrentWave = 0;
+        spawningFinished = true;
     }
 }
 
@@ -51,7 +51,6 @@ EnemyType WaveManager::getRandomEnemyTypeForWave(int wave) {
         }
     }
     else {
-        // Wave 3 mixes all three enemy types
         int roll = std::rand() % 3;
         if (roll == 0) {
             return EnemyType::EasyUpperRanged;
@@ -66,22 +65,22 @@ EnemyType WaveManager::getRandomEnemyTypeForWave(int wave) {
 }
 
 bool WaveManager::shouldSpawnEnemy(float dt, int numLanes, EnemyType& outType, int& outLane) {
-    if (m_isSpawningFinished || m_isGameWon || numLanes <= 0) {
+    if (spawningFinished || gameWon || numLanes <= 0) {
         return false;
     }
 
-    m_spawnTimer += dt;
+    spawnTimer += dt;
 
-    if (m_spawnTimer >= m_spawnInterval) {
-        m_spawnTimer = 0.0f;
+    if (spawnTimer >= spawnInterval) {
+        spawnTimer = 0.0f;
 
-        outType = getRandomEnemyTypeForWave(m_currentWave);
+        outType = getRandomEnemyTypeForWave(currentWave);
         outLane = std::rand() % numLanes;
 
-        m_enemiesSpawned++;
+        enemiesSpawned++;
 
-        if (m_enemiesSpawned >= m_enemiesInCurrentWave) {
-            m_isSpawningFinished = true;
+        if (enemiesSpawned >= enemiesInCurrentWave) {
+            spawningFinished = true;
         }
 
         return true;
@@ -91,26 +90,26 @@ bool WaveManager::shouldSpawnEnemy(float dt, int numLanes, EnemyType& outType, i
 }
 
 void WaveManager::onWaveEnemiesCleared() {
-    if (!m_isSpawningFinished) {
+    if (!spawningFinished) {
         return;
     }
 
-    if (m_currentWave < 3) {
-        startWave(m_currentWave + 1);
+    if (currentWave < 3) {
+        startWave(currentWave + 1);
     }
     else {
-        m_isGameWon = true;
+        gameWon = true;
     }
 }
 
 int WaveManager::getCurrentWave() const {
-    return m_currentWave;
+    return currentWave;
 }
 
 bool WaveManager::isSpawningFinished() const {
-    return m_isSpawningFinished;
+    return spawningFinished;
 }
 
 bool WaveManager::isGameWon() const {
-    return m_isGameWon;
+    return gameWon;
 }

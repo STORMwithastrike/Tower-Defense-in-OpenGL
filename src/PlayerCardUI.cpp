@@ -1,39 +1,35 @@
 #include "../headers/PlayerCardUI.h"
 
 PlayerCardUI::PlayerCardUI(CardUnitType unitType, int cost, const glm::vec2& position, const glm::vec2& size)
-    : m_unitType(unitType),
-    m_cost(cost),
-    m_position(position),
-    m_size(size),
-    m_isAffordable(false),
-    m_isHovered(false),
-    m_isSelected(false),
-    m_wasMousePressed(false) {
+    : unitType(unitType),
+    cost(cost),
+    position(position),
+    size(size),
+    affordable(false),
+    hovered(false),
+    selected(false),
+    wasMousePressed(false) {
 }
 
 bool PlayerCardUI::contains(double x, double y) const {
-    return (x >= m_position.x && x <= m_position.x + m_size.x &&
-        y >= m_position.y && y <= m_position.y + m_size.y);
+    return (x >= position.x && x <= position.x + size.x &&
+        y >= position.y && y <= position.y + size.y);
 }
 
 void PlayerCardUI::update(const Economy& economy, double mouseX, double mouseY) {
-    // 1. Check affordability against central Economy
-    m_isAffordable = economy.canAfford(m_cost);
-
-    // 2. Track mouse hover
-    m_isHovered = contains(mouseX, mouseY);
+    affordable = economy.canAfford(cost);
+    hovered = contains(mouseX, mouseY);
 }
 
 bool PlayerCardUI::handleMouseClick(double mouseX, double mouseY, bool isPressed) {
     bool clicked = false;
 
-    // Trigger on mouse down while hovered and affordable
-    if (isPressed && !m_wasMousePressed && m_isHovered && m_isAffordable) {
-        m_isSelected = !m_isSelected;
+    if (isPressed && !wasMousePressed && hovered && affordable) {
+        selected = !selected;
         clicked = true;
     }
 
-    m_wasMousePressed = isPressed;
+    wasMousePressed = isPressed;
     return clicked;
 }
 
@@ -42,106 +38,90 @@ void PlayerCardUI::render(Renderer& renderer) const {
     glm::vec4 accentColor;
     glm::vec4 borderColor;
 
-    if (!m_isAffordable) {
-
-        bgColor = glm::vec4(0.20f, 0.20f, 0.20f, 0.85f); // Dim charcoal
-        accentColor = glm::vec4(0.38f, 0.38f, 0.38f, 1.0f);  // Flat gray
-        borderColor = glm::vec4(0.28f, 0.28f, 0.28f, 1.0f);  // Inactive gray border
+    if (!affordable) {
+        bgColor = glm::vec4(0.20f, 0.20f, 0.20f, 0.85f);
+        accentColor = glm::vec4(0.38f, 0.38f, 0.38f, 1.0f);
+        borderColor = glm::vec4(0.28f, 0.28f, 0.28f, 1.0f);
     }
     else {
-        // --- COLORIZED STATE (Affordable) ---
-        bgColor = glm::vec4(0.12f, 0.14f, 0.18f, 0.95f);     // Dark slate base
+        bgColor = glm::vec4(0.12f, 0.14f, 0.18f, 0.95f);
 
-        if (m_unitType == CardUnitType::Melee) {
-            accentColor = glm::vec4(0.90f, 0.25f, 0.25f, 1.0f); // Red
+        if (unitType == CardUnitType::Melee) {
+            accentColor = glm::vec4(0.90f, 0.25f, 0.25f, 1.0f);
         }
-        else if (m_unitType == CardUnitType::Ranged) {
-            accentColor = glm::vec4(0.25f, 0.80f, 0.35f, 1.0f); // Green
+        else if (unitType == CardUnitType::Ranged) {
+            accentColor = glm::vec4(0.25f, 0.80f, 0.35f, 1.0f);
         }
         else {
-            accentColor = glm::vec4(0.25f, 0.55f, 0.95f, 1.0f); // Blue
+            accentColor = glm::vec4(0.25f, 0.55f, 0.95f, 1.0f);
         }
 
-        if (m_isSelected) {
-            borderColor = glm::vec4(1.0f, 0.84f, 0.0f, 1.0f);  // Gold ring when selected
+        if (selected) {
+            borderColor = glm::vec4(1.0f, 0.84f, 0.0f, 1.0f);
         }
-        else if (m_isHovered) {
-            borderColor = glm::vec4(0.95f, 0.95f, 0.95f, 1.0f); // White ring on hover
+        else if (hovered) {
+            borderColor = glm::vec4(0.95f, 0.95f, 0.95f, 1.0f);
         }
         else {
             borderColor = accentColor;
         }
     }
 
-    // 1. Draw outer border
-    renderer.DrawQuad(m_position - glm::vec2(2.0f, 2.0f), m_size + glm::vec2(4.0f, 4.0f), borderColor);
+    renderer.DrawQuad(position - glm::vec2(2.0f, 2.0f), size + glm::vec2(4.0f, 4.0f), borderColor);
+    renderer.DrawQuad(position, size, bgColor);
 
-    // 2. Draw card background body
-    renderer.DrawQuad(m_position, m_size, bgColor);
-
-    // 3. Draw miniature composite player model in card preview area
     renderMiniModel(renderer);
 
-    // 4. Draw bottom cost bar
-    glm::vec2 barSize = glm::vec2(m_size.x * 0.80f, 6.0f);
-    glm::vec2 barPos = glm::vec2(m_position.x + (m_size.x - barSize.x) * 0.5f, m_position.y + m_size.y - 12.0f);
-    glm::vec4 barColor = m_isAffordable ? glm::vec4(1.0f, 0.84f, 0.0f, 1.0f) : glm::vec4(0.35f, 0.35f, 0.35f, 1.0f);
+    glm::vec2 barSize = glm::vec2(size.x * 0.80f, 6.0f);
+    glm::vec2 barPos = glm::vec2(position.x + (size.x - barSize.x) * 0.5f, position.y + size.y - 12.0f);
+    glm::vec4 barColor = affordable ? glm::vec4(1.0f, 0.84f, 0.0f, 1.0f) : glm::vec4(0.35f, 0.35f, 0.35f, 1.0f);
     renderer.DrawQuad(barPos, barSize, barColor);
 }
 
 void PlayerCardUI::renderMiniModel(Renderer& renderer) const {
     const float scale = 0.5f;
-    const float centerX = m_position.x + m_size.x * 0.5f;
-    const float centerY = m_position.y + (m_size.y - 12.0f) * 0.5f;
+    const float centerX = position.x + size.x * 0.5f;
+    const float centerY = position.y + (size.y - 12.0f) * 0.5f;
 
     auto makeColor = [this](float r, float g, float b) -> glm::vec4 {
-        if (!m_isAffordable) {
+        if (!affordable) {
             float gray = 0.299f * r + 0.587f * g + 0.114f * b;
             return glm::vec4(gray, gray, gray, 1.0f);
         }
         return glm::vec4(r, g, b, 1.0f);
-    };
+        };
 
     auto drawMiniQuad = [&](float origX, float origY, float origW, float origH, float modelCenterX, float r, float g, float b) {
         glm::vec2 pos(centerX + (origX - modelCenterX) * scale, centerY + origY * scale);
-        glm::vec2 size(origW * scale, origH * scale);
-        renderer.DrawQuad(pos, size, makeColor(r, g, b));
-    };
+        glm::vec2 sz(origW * scale, origH * scale);
+        renderer.DrawQuad(pos, sz, makeColor(r, g, b));
+        };
 
     auto drawMiniTriangle = [&](float x1, float y1, float x2, float y2, float x3, float y3, float modelCenterX, float r, float g, float b) {
         glm::vec2 p1(centerX + (x1 - modelCenterX) * scale, centerY + y1 * scale);
         glm::vec2 p2(centerX + (x2 - modelCenterX) * scale, centerY + y2 * scale);
         glm::vec2 p3(centerX + (x3 - modelCenterX) * scale, centerY + y3 * scale);
         renderer.DrawTriangle(p1, p2, p3, makeColor(r, g, b));
-    };
+        };
 
-    if (m_unitType == CardUnitType::Melee) {
+    if (unitType == CardUnitType::Melee) {
         const float modelCenterX = 28.0f;
-        // 1. Head (Gray Helmet)
         drawMiniQuad(10.0f, -19.0f, 16.0f, 14.0f, modelCenterX, 0.60f, 0.65f, 0.70f);
-        // 2. Body (Blueish Armor)
         drawMiniQuad(8.0f, -5.0f, 20.0f, 24.0f, modelCenterX, 0.35f, 0.45f, 0.60f);
-        // 3. Sword (Blade + Tip)
         drawMiniQuad(28.0f, 3.0f, 14.0f, 4.0f, modelCenterX, 0.85f, 0.85f, 0.90f);
         drawMiniTriangle(42.0f, 1.0f, 42.0f, 9.0f, 48.0f, 5.0f, modelCenterX, 0.85f, 0.85f, 0.90f);
     }
-    else if (m_unitType == CardUnitType::Ranged) {
+    else if (unitType == CardUnitType::Ranged) {
         const float modelCenterX = 26.0f;
-        // 1. Head
         drawMiniQuad(9.0f, -19.0f, 16.0f, 14.0f, modelCenterX, 0.30f, 0.30f, 0.35f);
-        // 2. Body
         drawMiniQuad(8.0f, -5.0f, 18.0f, 24.0f, modelCenterX, 0.52f, 0.35f, 0.20f);
-        // 3. Crossbow (Stock & Prod)
         drawMiniQuad(26.0f, 3.0f, 18.0f, 4.0f, modelCenterX, 0.24f, 0.14f, 0.08f);
         drawMiniQuad(38.0f, -5.0f, 4.0f, 20.0f, modelCenterX, 0.30f, 0.30f, 0.35f);
     }
-    else if (m_unitType == CardUnitType::Defense) {
+    else if (unitType == CardUnitType::Defense) {
         const float modelCenterX = 21.0f;
-        // 1. Head
         drawMiniQuad(8.0f, -21.0f, 16.0f, 12.0f, modelCenterX, 0.40f, 0.42f, 0.48f);
-        // 2. Body
         drawMiniQuad(6.0f, -9.0f, 18.0f, 24.0f, modelCenterX, 0.30f, 0.32f, 0.38f);
-        // 3. Shield (Quad & Tip)
         drawMiniQuad(24.0f, -19.0f, 12.0f, 32.0f, modelCenterX, 0.50f, 0.52f, 0.58f);
         drawMiniTriangle(24.0f, 13.0f, 36.0f, 13.0f, 30.0f, 21.0f, modelCenterX, 0.50f, 0.52f, 0.58f);
     }

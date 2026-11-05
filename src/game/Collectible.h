@@ -5,6 +5,13 @@
 #include "../render/Renderer.h"
 
 class Collectible {
+private:
+    int lane;
+    glm::vec2 position;
+    int value;
+    bool active;
+    float animTimer;
+
 public:
     Collectible(int lane, const glm::vec2& pos, int value = 5);
 
@@ -18,12 +25,4 @@ public:
     int GetValue() const { return value; }
     BoundingBox GetBounds() const;
     const glm::vec2& GetPosition() const { return position; }
-
-private:
-    int lane;
-    glm::vec2 position;
-    int value;
-    bool active;
-    float animTimer;
 };
-
