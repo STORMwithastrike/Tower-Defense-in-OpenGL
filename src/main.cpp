@@ -54,13 +54,11 @@ int main() {
     glfwSetMouseButtonCallback(rawWindow, InputManager::mouseButtonCallback);
     glfwSetCursorPosCallback(rawWindow, InputManager::cursorPosCallback);
 
-    // Set up the shader, camera, and renderer used to draw the game.
     Shader mainShader(ASSETS_DIR "shaders/main.vert", ASSETS_DIR "shaders/main.frag");
     Camera camera(screenWidth, screenHeight);
     Renderer renderer(&mainShader, screenWidth, screenHeight);
     renderer.SetCamera(&camera);
 
-    // Build the lane grid and the background environment.
     Grid gameGrid;
     gameGrid.init();
     VertexArray gridVAO(gameGrid.getVertices(), gameGrid.getIndices());
@@ -79,7 +77,6 @@ int main() {
     CollisionSystem collisionSystem;
     CombatSystem combatSystem;
 
-    // Create one mesh for each player type. These meshes are reused when units are drawn.
     MeleePlayer protoMelee(0);
     protoMelee.init(0.0f, 0.0f);
     VertexArray meleeVAO(protoMelee.getVertices(), protoMelee.getIndices());
@@ -94,7 +91,6 @@ int main() {
 
     std::vector<std::unique_ptr<Player>> spawnedPlayers;
 
-    // Store projectiles fired by the player and prepare the arrow mesh.
     std::vector<Projectile> playerArrows;
     Projectile arrowProto;
     arrowProto.init(0.0f, 0.0f);
@@ -160,7 +156,7 @@ int main() {
 
         bool spaceDown = InputManager::isKeyPressed(GLFW_KEY_SPACE);
 
-        // Debug shortcut: press C once to add 20 coins.
+        // debug add coins
         bool cDown = InputManager::isKeyPressed(GLFW_KEY_C);
         if (cDown && !prevCKey) {
             economy.addCoins(20);
@@ -181,7 +177,6 @@ int main() {
             }
         }
         else if (stateMachine.GetState() == GameState::GAMEPLAY) {
-            // Update the unit cards and handle selecting one of them.
             for (size_t i = 0; i < unitCards.size(); ++i) {
                 unitCards[i].update(economy, mouseX, mouseY);
 
@@ -198,7 +193,6 @@ int main() {
 
             laneSelector.update(gameGrid, mouseX, mouseY, mouseClicked);
 
-            // If a unit card is selected, try to buy and place that unit in the hovered lane.
             PlayerCardUI* selectedCard = nullptr;
             for (auto& card : unitCards) {
                 if (card.isSelected()) {
@@ -247,7 +241,6 @@ int main() {
                 }
             }
 
-            // Apply jump or duck actions to players in the selected lane.
             std::vector<int> selectedLanes;
             if (laneSelector.getSelectedLaneId() != -1) {
                 selectedLanes.push_back(laneSelector.getSelectedLaneId());
@@ -256,7 +249,6 @@ int main() {
 
             for (auto& p : spawnedPlayers) {
                 if (p && p->isAlive()) {
-                    // Melee units attack automatically when they are fighting and their cooldown is ready.
                     if (p->getIsFighting() && p->canAttack() && dynamic_cast<MeleePlayer*>(p.get())) {
                         p->attack();
                         p->resetAttackCooldown();
@@ -265,7 +257,6 @@ int main() {
                 }
             }
 
-            // Space lets ranged units shoot and melee units perform an attack.
             if (spaceDown) {
                 for (auto& p : spawnedPlayers) {
                     if (p && p->isAlive()) {
@@ -288,7 +279,6 @@ int main() {
                 }
             }
 
-            // Ask the wave manager whether it is time to spawn another enemy.
             EnemyType spawnType;
             int spawnLane = 0;
             if (waveManager.shouldSpawnEnemy(dt, gameGrid.getLaneCount(), spawnType, spawnLane)) {
@@ -343,7 +333,6 @@ int main() {
                 stateMachine.TriggerDefeat();
             }
 
-            // Collect gold from defeated enemies and from clicked collectibles.
             int collectedGold = economy.getCoins();
             collisionSystem.CheckPlayerCollectiblePickups(activePlayers, collectibles, collectedGold);
 
@@ -362,7 +351,7 @@ int main() {
 
             combatSystem.Update(dt, activePlayers, enemies, collectibles);
 
-            // Remove dead players and projectiles that are no longer active.
+            // cleanup inactive entities
             for (auto it = spawnedPlayers.begin(); it != spawnedPlayers.end(); ) {
                 if (!(*it) || !(*it)->isAlive()) {
                     it = spawnedPlayers.erase(it);
@@ -406,7 +395,6 @@ int main() {
             }
         }
 
-        // Clear the screen and draw the current game state.
         glClearColor(0.10f, 0.12f, 0.18f, 1.0f);
         glClear(GL_COLOR_BUFFER_BIT);
 
@@ -421,7 +409,6 @@ int main() {
             renderer.Draw(gridVAO, glm::vec2(0.0f), glm::vec2(1.0f));
             renderer.Draw(envVAO, glm::vec2(0.0f), glm::vec2(1.0f));
 
-            // Show which lane the player has selected or is hovering over.
             const auto& lanes = gameGrid.getLanes();
             for (const auto& lane : lanes) {
                 glm::vec2 pos(lane.minX, lane.minY);
@@ -439,7 +426,6 @@ int main() {
                 }
             }
 
-            // Draw the castle and its gate.
             glm::vec4 towerColor = homeBase.hasLostGame()
                 ? glm::vec4(0.65f, 0.15f, 0.15f, 1.0f)
                 : glm::vec4(0.32f, 0.34f, 0.40f, 1.0f);
@@ -455,14 +441,12 @@ int main() {
             std::string castleHpNum = std::to_string(homeBase.getHealth()) + " / " + std::to_string(homeBase.getMaxHealth());
             renderer.DrawString(castleHpNum, glm::vec2(26.0f, 94.0f), 0.75f, glm::vec4(0.95f, 0.95f, 0.95f, 1.0f));
 
-            // Draw the balcony where the princess stands.
             glm::vec2 balconyPos(24.0f, 175.0f);
             renderer.DrawQuad(balconyPos + glm::vec2(0.0f, 28.0f), glm::vec2(52.0f, 25.0f), glm::vec4(0.38f, 0.40f, 0.46f, 1.0f));
             renderer.DrawQuad(balconyPos + glm::vec2(-4.0f, 26.0f), glm::vec2(60.0f, 4.0f), glm::vec4(0.85f, 0.70f, 0.20f, 1.0f));
             renderer.DrawQuad(balconyPos + glm::vec2(4.0f, 38.0f), glm::vec2(44.0f, 52.0f), glm::vec4(0.55f, 0.12f, 0.60f, 1.0f));
             renderer.DrawQuad(balconyPos + glm::vec2(17.0f, 50.0f), glm::vec2(18.0f, 20.0f), glm::vec4(0.95f, 0.85f, 0.25f, 1.0f));
 
-            // Draw the princess and add a small idle bobbing motion.
             glm::vec2 princessPos = balconyPos + glm::vec2(26.0f, 16.0f);
             float pBob = sinf((float)currentTime * 3.0f) * 1.5f;
             princessPos.y += pBob;
@@ -475,12 +459,10 @@ int main() {
             renderer.DrawTriangle(princessPos + glm::vec2(-5.0f, -15.0f), princessPos + glm::vec2(5.0f, -15.0f), princessPos + glm::vec2(0.0f, -22.0f), glm::vec4(1.0f, 0.85f, 0.20f, 1.0f));
             renderer.DrawQuad(princessPos + glm::vec2(-3.0f, 5.0f), glm::vec2(6.0f, 4.0f), glm::vec4(0.98f, 0.85f, 0.75f, 1.0f));
 
-            // Draw any gold collectibles still on the battlefield.
             for (auto& col : collectibles) {
                 col.Render(renderer);
             }
 
-            // Draw living player units and their health bars.
             for (const auto& p : spawnedPlayers) {
                 if (!p || !p->isAlive()) continue;
 
@@ -511,7 +493,7 @@ int main() {
                 ep.Render(renderer);
             }
 
-            // Draw the heads-up display with gold, wave, unit cards, and controls.
+            // HUD
             renderer.DrawQuad(glm::vec2(0.0f, 0.0f), glm::vec2(screenWidth, 50.0f), glm::vec4(0.08f, 0.10f, 0.15f, 0.90f));
             renderer.DrawQuad(glm::vec2(0.0f, 48.0f), glm::vec2(screenWidth, 2.0f), glm::vec4(0.85f, 0.70f, 0.20f, 1.0f));
 
