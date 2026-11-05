@@ -29,7 +29,9 @@ public:
     const std::vector<unsigned int>& getIndices() const { return indices; }
 
     //helpers lel other members
-    const std::vector<Lane>& getLanes() const { return lanes; }
+    const std::vector<Lane>& getLanes() const {
+        return lanes; 
+    }
     int getLaneCount() const { return static_cast<int>(lanes.size()); }
     float getLaneCenterY(int laneIndex) const;
 };

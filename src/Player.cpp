@@ -12,7 +12,7 @@ Player::Player(int maxHp, int lane)
     visualYOffset(0.0f),
     isFighting(false),
     attackCooldown(0.0f),
-    attackInterval(0.65f) { // 0.65s cooldown prevents arrow spamming
+    attackInterval(0.65f) { 
 }
 
 void Player::jump() {
@@ -36,12 +36,12 @@ void Player::duck() {
 void Player::update(float dt) {
     if (!active) return;
 
-    // Halt advancement upon contact with an enemy; resume once the enemy is cleared
+    
     if (!isFighting) {
         position.x += advanceSpeed * dt;
     }
 
-    // Update dodge timers
+    
     if (isJumping || isDucking) {
         actionTimer -= dt;
         if (actionTimer <= 0.0f) {
@@ -51,11 +51,9 @@ void Player::update(float dt) {
         }
     }
 
-    // Update attack cooldown
     if (attackCooldown > 0.0f) {
         attackCooldown -= dt;
-    }
-}
+    }}
 
 glm::vec2 Player::getRenderPosition() const {
     return glm::vec2(position.x, position.y + visualYOffset);
@@ -72,4 +70,5 @@ void Player::deploy(float startX, float startY, int newLane) {
     visualYOffset = 0.0f;
     isFighting = false;
     attackCooldown = 0.0f;
+
 }

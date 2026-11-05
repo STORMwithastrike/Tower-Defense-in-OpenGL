@@ -10,3 +10,4 @@ public:
     MeleePlayer(int lane = 0);
     void init(float startX, float startY);
 };
+
