@@ -1,13 +1,14 @@
 #pragma once
+
 #include <glm/glm.hpp>
 
 class HomeBase {
 private:
-    glm::vec2 m_position;
-    glm::vec2 m_size;
-    bool m_isBreached;
-    int m_currentHealth;
-    int m_maxHealth;
+    glm::vec2 position;
+    glm::vec2 size;
+    bool isBreached;
+    int currentHealth;
+    int maxHealth;
 
 public:
     HomeBase(float startX, float startY, float width, float height, int maxHp = 10);
@@ -19,7 +20,7 @@ public:
     glm::vec2 getSize() const;
     bool hasLostGame() const;
 
-    int getHealth() const { return m_currentHealth; }
-    int getMaxHealth() const { return m_maxHealth; }
+    int getHealth() const { return currentHealth; }
+    int getMaxHealth() const { return maxHealth; }
     void reset();
 };

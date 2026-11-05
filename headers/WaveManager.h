@@ -8,13 +8,13 @@ enum class EnemyType {
 
 class WaveManager {
 private:
-    int m_currentWave;
-    int m_enemiesSpawned;
-    int m_enemiesInCurrentWave;
-    float m_spawnTimer;
-    float m_spawnInterval;
-    bool m_isSpawningFinished;
-    bool m_isGameWon;
+    int currentWave;
+    int enemiesSpawned;
+    int enemiesInCurrentWave;
+    float spawnTimer;
+    float spawnInterval;
+    bool spawningFinished;
+    bool gameWon;
 
     EnemyType getRandomEnemyTypeForWave(int wave);
 
