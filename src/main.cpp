@@ -409,12 +409,14 @@ int main() {
           ++it;
         }
       }
-    } else {
-      stateMachine.Update(dt, mousePos, mouseClicked);
-      if (stateMachine.GetState() == GameState::CUTSCENE) {
-        cutscene.Start();
-      }
     }
+ else {
+     stateMachine.Update(dt, mousePos, mouseClicked);
+     if (stateMachine.GetState() == GameState::CUTSCENE) {
+         restartGame();
+         cutscene.Start();
+     }
+        }
 
     // render scene
     glClearColor(0.10f, 0.12f, 0.18f, 1.0f);
