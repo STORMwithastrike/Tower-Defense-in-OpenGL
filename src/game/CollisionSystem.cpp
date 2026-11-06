@@ -38,8 +38,9 @@ Player* CollisionSystem::findShieldingDefensePlayer(
 
 static BoundingBox getPlayerBounds(const Player* p) {
     glm::vec2 pos = p->getRenderPosition();
-    float h = p->getIsDucking() ? 24.0f : 44.0f;
-    return BoundingBox(pos.x - 14.0f, pos.y - 20.0f, 28.0f, h);
+    float h = p->getIsDucking() ? 20.0f : (p->getIsJumping() ? 32.0f : 44.0f);
+    float yOffset = p->getIsDucking() ? -10.0f : -20.0f;
+    return BoundingBox(pos.x - 12.0f, pos.y + yOffset, 24.0f, h);
 }
 
 void CollisionSystem::CheckPlayerEnemyEncounters(std::vector<Player*>& players,
@@ -140,6 +141,14 @@ void CollisionSystem::CheckEnemyProjectiles(std::vector<EnemyProjectile>& enemyP
         for (Player* p : players) {
             if (!p || !p->isAlive() || p->getLaneId() != lane)
                 continue;
+
+            // Dodge check: jumping avoids low projectile, ducking avoids high projectile
+            if (proj.GetAttackHeight() == AttackHeight::LOW && p->getIsJumping()) {
+                continue;
+            }
+            if (proj.GetAttackHeight() == AttackHeight::HIGH && p->getIsDucking()) {
+                continue;
+            }
 
             if (projBox.Intersects(getPlayerBounds(p))) {
                 Player* shield = findShieldingDefensePlayer(players, lane, p->getPosition().x);

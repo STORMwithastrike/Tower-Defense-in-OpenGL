@@ -19,7 +19,7 @@ public:
     Projectile();
 
     void init(float startX, float startY);
-    void update();
+    void update(float dt = 0.01667f);
 
     const std::vector<float>& getVertices() const { return vertices; }
     const std::vector<unsigned int>& getIndices() const { return indices; }

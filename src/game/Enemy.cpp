@@ -23,14 +23,14 @@ Enemy::Enemy(int lane, const glm::vec2& startPos, EnemyType type, int maxHealth,
 void Enemy::TakeDamage(int dmg) {
     health -= dmg;
     if (health < 0) health = 0;
-    damageFlashTimer = 0.28f;
+    damageFlashTimer = 0.35f;
 }
 
 float Enemy::GetDamageIntensity() const {
     float healthDeficit = 1.0f - ((float)health / (float)maxHealth);
-    float baseRed = healthDeficit * 0.70f;
+    float baseRed = healthDeficit * 0.75f;
     if (damageFlashTimer > 0.0f) {
-        baseRed = std::max(baseRed, 0.85f);
+        baseRed = std::max(baseRed, 0.90f);
     }
     return std::min(1.0f, baseRed);
 }

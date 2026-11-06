@@ -72,6 +72,10 @@ void PlayerCardUI::render(Renderer& renderer) const {
 
     renderMiniModel(renderer);
 
+    std::string costStr = std::to_string(cost);
+    renderer.DrawString(costStr, position + glm::vec2(5.0f, 4.0f), 0.70f,
+                        affordable ? glm::vec4(1.0f, 0.88f, 0.25f, 1.0f) : glm::vec4(0.55f, 0.55f, 0.55f, 1.0f));
+
     glm::vec2 barSize = glm::vec2(size.x * 0.80f, 6.0f);
     glm::vec2 barPos = glm::vec2(position.x + (size.x - barSize.x) * 0.5f, position.y + size.y - 12.0f);
     glm::vec4 barColor = affordable ? glm::vec4(1.0f, 0.84f, 0.0f, 1.0f) : glm::vec4(0.35f, 0.35f, 0.35f, 1.0f);

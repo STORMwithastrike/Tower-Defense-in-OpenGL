@@ -11,13 +11,12 @@ MainMenuUI::MainMenuUI(float screenWidth, float screenHeight)
     float btnWidth = 260.0f;
     float btnHeight = 44.0f;
     float startX = (screenWidth - btnWidth) * 0.5f;
-    float startY = 270.0f;
-    float spacing = 58.0f;
+    float startY = 275.0f;
+    float spacing = 62.0f;
 
     buttons = {
-        { "START GAME",     glm::vec2(startX, startY),                 glm::vec2(btnWidth, btnHeight), MainMenuAction::START_GAME,     false },
-        { "SOUND SETTINGS", glm::vec2(startX, startY + spacing),       glm::vec2(btnWidth, btnHeight), MainMenuAction::SOUND_SETTINGS, false },
-        { "EXIT GAME",      glm::vec2(startX, startY + spacing * 2.0f), glm::vec2(btnWidth, btnHeight), MainMenuAction::EXIT_GAME,      false }
+        { "START GAME",     glm::vec2(startX, startY),           glm::vec2(btnWidth, btnHeight), MainMenuAction::START_GAME, false },
+        { "EXIT GAME",      glm::vec2(startX, startY + spacing), glm::vec2(btnWidth, btnHeight), MainMenuAction::EXIT_GAME,  false }
     };
 }
 
@@ -57,9 +56,8 @@ void MainMenuUI::Render(Renderer& renderer) {
         renderer.DrawQuad(glm::vec2(x + 45.0f, 200.0f), glm::vec2(40.0f, 40.0f), glm::vec4(0.10f, 0.12f, 0.18f, 1.0f));
     }
 
-    // 2. Ornate Royal Heraldic Banner
-    float bannerPulse = sinf(animTimer * 2.0f) * 3.0f;
-    glm::vec2 titlePos((screenWidth - 460.0f) * 0.5f, 60.0f + bannerPulse);
+    // 2. Ornate Royal Heraldic Banner (Static)
+    glm::vec2 titlePos((screenWidth - 460.0f) * 0.5f, 60.0f);
     // Outer golden border
     renderer.DrawQuad(titlePos - glm::vec2(4.0f, 4.0f), glm::vec2(468.0f, 118.0f),
                       glm::vec4(0.85f, 0.65f, 0.15f, 1.0f));
@@ -101,10 +99,5 @@ void MainMenuUI::Render(Renderer& renderer) {
         float textY = btn.pos.y + 14.0f;
         renderer.DrawString(btn.label, glm::vec2(textX, textY), 1.25f, textCol);
     }
-
-    // Footer instructions
-    renderer.DrawString("CLICK TO SELECT - ESC TO PAUSE IN GAME",
-                        glm::vec2((screenWidth - 340.0f) * 0.5f, screenHeight - 40.0f),
-                        0.95f, glm::vec4(0.6f, 0.65f, 0.75f, 1.0f));
 }
 

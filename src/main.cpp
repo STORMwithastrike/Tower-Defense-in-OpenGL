@@ -27,8 +27,8 @@
 #include "game/Collectible.h"
 #include "game/CollisionSystem.h"
 #include "game/CombatSystem.h"
-#include "game/Enemy.h"
 #include "game/EasyEnemy.h"
+#include "game/Enemy.h"
 #include "game/EnemyProjectile.h"
 #include "game/HardEnemy.h"
 #include "game/MediumEnemy.h"
@@ -56,18 +56,15 @@ int main() {
   glfwSetMouseButtonCallback(rawWindow, InputManager::mouseButtonCallback);
   glfwSetCursorPosCallback(rawWindow, InputManager::cursorPosCallback);
 
-  // shader, camera and renderer setup
   Shader mainShader(ASSETS_DIR "shaders/main.vert",
                     ASSETS_DIR "shaders/main.frag");
   Camera camera(screenWidth, screenHeight);
   Renderer renderer(&mainShader, screenWidth, screenHeight);
   renderer.SetCamera(&camera);
 
-  // Enable alpha blending for UI transparencies and 70% opacity pause background
   glEnable(GL_BLEND);
   glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);
 
-  // grid and background
   Grid gameGrid;
   gameGrid.init();
   VertexArray gridVAO(gameGrid.getVertices(), gameGrid.getIndices());
@@ -86,7 +83,6 @@ int main() {
   CollisionSystem collisionSystem;
   CombatSystem combatSystem;
 
-  // prototype meshes for players
   MeleePlayer protoMelee(0);
   protoMelee.init(0.0f, 0.0f);
   VertexArray meleeVAO(protoMelee.getVertices(), protoMelee.getIndices());
@@ -101,7 +97,6 @@ int main() {
 
   std::vector<std::unique_ptr<Player>> spawnedPlayers;
 
-  // arrows and projectiles
   std::vector<Projectile> playerArrows;
   Projectile arrowProto;
   arrowProto.init(0.0f, 0.0f);
@@ -114,13 +109,11 @@ int main() {
   Economy economy(60);
 
   std::vector<PlayerCardUI> unitCards;
-  // Bottom center card placement: screen is 800 wide, 3 cards centered between
-  // X=255 and X=545, Y=548
   unitCards.emplace_back(CardUnitType::Melee, 10, glm::vec2(255.0f, 548.0f),
                          glm::vec2(86.0f, 44.0f));
-  unitCards.emplace_back(CardUnitType::Ranged, 15, glm::vec2(357.0f, 548.0f),
+  unitCards.emplace_back(CardUnitType::Ranged, 20, glm::vec2(357.0f, 548.0f),
                          glm::vec2(86.0f, 44.0f));
-  unitCards.emplace_back(CardUnitType::Defense, 20, glm::vec2(459.0f, 548.0f),
+  unitCards.emplace_back(CardUnitType::Defense, 30, glm::vec2(459.0f, 548.0f),
                          glm::vec2(86.0f, 44.0f));
 
   auto restartGame = [&]() {
@@ -174,7 +167,6 @@ int main() {
 
     bool spaceDown = InputManager::isKeyPressed(GLFW_KEY_SPACE);
 
-    // debug add coins
     bool cDown = InputManager::isKeyPressed(GLFW_KEY_C);
     if (cDown && !prevCKey) {
       economy.addCoins(20);
@@ -194,7 +186,6 @@ int main() {
         stateMachine.SetState(GameState::GAMEPLAY);
       }
     } else if (stateMachine.GetState() == GameState::GAMEPLAY) {
-      // update cards
       for (size_t i = 0; i < unitCards.size(); ++i) {
         unitCards[i].update(economy, mouseX, mouseY);
 
@@ -211,7 +202,6 @@ int main() {
 
       laneSelector.update(gameGrid, mouseX, mouseY, mouseClicked);
 
-      // buy and place units
       PlayerCardUI *selectedCard = nullptr;
       for (auto &card : unitCards) {
         if (card.isSelected()) {
@@ -261,7 +251,6 @@ int main() {
         }
       }
 
-      // jump / duck input
       std::vector<int> selectedLanes;
       if (laneSelector.getSelectedLaneId() != -1) {
         selectedLanes.push_back(laneSelector.getSelectedLaneId());
@@ -270,7 +259,6 @@ int main() {
 
       for (auto &p : spawnedPlayers) {
         if (p && p->isAlive()) {
-          // Auto attack animation for melee while in combat
           if (p->getIsFighting() && p->canAttack() &&
               dynamic_cast<MeleePlayer *>(p.get())) {
             p->attack();
@@ -280,7 +268,6 @@ int main() {
         }
       }
 
-      // attack input (spacebar)
       if (spaceDown) {
         for (auto &p : spawnedPlayers) {
           if (p && p->isAlive()) {
@@ -297,13 +284,21 @@ int main() {
               if (p->canAttack()) {
                 p->attack();
                 p->resetAttackCooldown();
+                for (auto &e : enemies) {
+                  if (e && !e->IsDead() && e->GetLane() == p->getLaneId()) {
+                    float dx = e->GetPosition().x - p->getPosition().x;
+                    if (dx >= -10.0f && dx <= 55.0f) {
+                      e->TakeDamage(1);
+                      break;
+                    }
+                  }
+                }
               }
             }
           }
         }
       }
 
-      // wave spawns
       EnemyType spawnType;
       int spawnLane = 0;
       if (waveManager.shouldSpawnEnemy(dt, gameGrid.getLaneCount(), spawnType,
@@ -336,7 +331,7 @@ int main() {
       }
       for (auto &arrow : playerArrows) {
         if (arrow.isActive())
-          arrow.update();
+          arrow.update(dt);
       }
       for (auto &col : collectibles) {
         col.Update(dt);
@@ -360,7 +355,6 @@ int main() {
         stateMachine.TriggerDefeat();
       }
 
-      // pickup gold
       int collectedGold = economy.getCoins();
       collisionSystem.CheckPlayerCollectiblePickups(activePlayers, collectibles,
                                                     collectedGold);
@@ -381,7 +375,6 @@ int main() {
 
       combatSystem.Update(dt, activePlayers, enemies, collectibles);
 
-      // cleanup inactive entities
       for (auto it = spawnedPlayers.begin(); it != spawnedPlayers.end();) {
         if (!(*it) || !(*it)->isAlive()) {
           it = spawnedPlayers.erase(it);
@@ -413,27 +406,21 @@ int main() {
           ++it;
         }
       }
+    } else {
+      stateMachine.Update(dt, mousePos, mouseClicked);
+      if (stateMachine.GetState() == GameState::CUTSCENE) {
+        restartGame();
+        cutscene.Start();
+      }
     }
- else {
-     stateMachine.Update(dt, mousePos, mouseClicked);
-     if (stateMachine.GetState() == GameState::CUTSCENE) {
-         restartGame();
-         cutscene.Start();
-     }
-        }
 
-    // render scene
     glClearColor(0.10f, 0.12f, 0.18f, 1.0f);
     glClear(GL_COLOR_BUFFER_BIT);
 
-    // Helper lambda to draw the gameplay field (lanes, environment, castle
-    // base, princess) Used by BOTH gameplay and cutscene so backgrounds are
-    // identical
     auto renderGameplayField = [&]() {
       renderer.Draw(gridVAO, glm::vec2(0.0f), glm::vec2(1.0f));
       renderer.Draw(envVAO, glm::vec2(0.0f), glm::vec2(1.0f));
 
-      // Castle tower & base
       glm::vec4 towerColor = homeBase.hasLostGame()
                                  ? glm::vec4(0.65f, 0.15f, 0.15f, 1.0f)
                                  : glm::vec4(0.32f, 0.34f, 0.40f, 1.0f);
@@ -447,7 +434,6 @@ int main() {
       renderer.DrawQuad(glm::vec2(25.0f, 470.0f), glm::vec2(50.0f, 70.0f),
                         glm::vec4(0.18f, 0.18f, 0.22f, 1.0f));
 
-      // Balcony
       glm::vec2 balconyPos(24.0f, 175.0f);
       renderer.DrawQuad(balconyPos + glm::vec2(0.0f, 28.0f),
                         glm::vec2(52.0f, 25.0f),
@@ -462,7 +448,6 @@ int main() {
                         glm::vec2(18.0f, 20.0f),
                         glm::vec4(0.95f, 0.85f, 0.25f, 1.0f));
 
-      // Princess on balcony
       glm::vec2 princessPos = balconyPos + glm::vec2(26.0f, 16.0f);
       float pBob = sinf((float)currentTime * 3.0f) * 1.5f;
       princessPos.y += pBob;
@@ -492,7 +477,6 @@ int main() {
     };
 
     if (stateMachine.GetState() == GameState::CUTSCENE) {
-      // Cutscene rendered directly on top of the gameplay fields
       renderGameplayField();
       cutscene.Render(renderer);
     } else if (stateMachine.GetState() == GameState::MAIN_MENU ||
@@ -501,7 +485,6 @@ int main() {
     } else {
       renderGameplayField();
 
-      // lane selection highlight
       const auto &lanes = gameGrid.getLanes();
       for (const auto &lane : lanes) {
         glm::vec2 pos(lane.minX, lane.minY);
@@ -526,7 +509,6 @@ int main() {
         }
       }
 
-      // Castle HP display using HealthUI
       renderer.DrawString("CASTLE HP", glm::vec2(8.0f, 68.0f), 0.82f,
                           glm::vec4(1.0f, 0.90f, 0.30f, 1.0f));
       HealthUI::draw(renderer, glm::vec2(8.0f, 82.0f), 82.0f,
@@ -537,26 +519,26 @@ int main() {
       renderer.DrawString(castleHpNum, glm::vec2(26.0f, 94.0f), 0.75f,
                           glm::vec4(0.95f, 0.95f, 0.95f, 1.0f));
 
-      // collectibles
       for (auto &col : collectibles) {
         col.Render(renderer);
       }
 
-      // draw players and health bars via HealthUI
       for (const auto &p : spawnedPlayers) {
         if (!p || !p->isAlive())
           continue;
 
+        float red = p->getDamageIntensity();
         if (dynamic_cast<MeleePlayer *>(p.get())) {
           renderer.Draw(meleeVAO, p->getRenderPosition(), glm::vec2(1.0f, 1.0f),
-                        0.0f, glm::vec4(1.0f), p->getRotation());
+                        0.0f, glm::vec4(1.0f), p->getRotation(), red);
         } else if (dynamic_cast<RangedPlayer *>(p.get())) {
           renderer.Draw(rangedVAO, p->getRenderPosition(),
                         glm::vec2(1.0f, 1.0f), 0.0f, glm::vec4(1.0f),
-                        p->getRotation());
+                        p->getRotation(), red);
         } else if (dynamic_cast<DefensePlayer *>(p.get())) {
           renderer.Draw(defenseVAO, p->getRenderPosition(),
-                        glm::vec2(1.0f, 1.0f), 0.0f, glm::vec4(1.0f));
+                        glm::vec2(1.0f, 1.0f), 0.0f, glm::vec4(1.0f), 0.0f,
+                        red);
         }
 
         glm::vec2 rPos = p->getRenderPosition();
@@ -579,7 +561,6 @@ int main() {
         ep.Render(renderer);
       }
 
-      // Top HUD Bar (Gold, Waves, Controls hint)
       renderer.DrawQuad(glm::vec2(0.0f, 0.0f), glm::vec2(screenWidth, 46.0f),
                         glm::vec4(0.08f, 0.10f, 0.15f, 0.90f));
       renderer.DrawQuad(glm::vec2(0.0f, 44.0f), glm::vec2(screenWidth, 2.0f),
@@ -598,7 +579,6 @@ int main() {
                           glm::vec2(470.0f, 16.0f), 0.72f,
                           glm::vec4(0.70f, 0.75f, 0.85f, 1.0f));
 
-      // Player Cards placed at bottom center
       renderer.DrawQuad(glm::vec2(245.0f, 542.0f), glm::vec2(310.0f, 56.0f),
                         glm::vec4(0.08f, 0.10f, 0.15f, 0.90f));
       renderer.DrawQuad(glm::vec2(245.0f, 542.0f), glm::vec2(310.0f, 2.0f),

@@ -23,7 +23,8 @@ void EnemyProjectile::Update(float dt) {
 }
 
 BoundingBox EnemyProjectile::GetBounds() const {
-    return BoundingBox(position.x - 20.0f, position.y - 6.0f, 32.0f, 12.0f);
+    // Smaller, tighter hitbox centered around the projectile tip so players can cleanly dodge by jumping or crouching
+    return BoundingBox(position.x - 18.0f, position.y - 3.0f, 16.0f, 6.0f);
 }
 
 void EnemyProjectile::Render(Renderer& renderer) {

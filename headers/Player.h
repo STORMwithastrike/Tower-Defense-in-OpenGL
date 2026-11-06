@@ -23,6 +23,7 @@ protected:
     bool isAttacking = false;
     float attackTimer = 0.0f;
     float rotation = 0.0f;
+    float damageFlashTimer = 0.0f;
 
 public:
     Player(int maxHp = 5, int lane = 0);
@@ -34,13 +35,22 @@ public:
             health = 0;
             active = false;
         }
+        damageFlashTimer = 0.35f;
     }
     int getHealth() const { return health; }
     int getMaxHealth() const { return maxHealth; }
+    float getDamageIntensity() const {
+        if (maxHealth <= 0) return 0.0f;
+        float healthDeficit = 1.0f - (static_cast<float>(health) / static_cast<float>(maxHealth));
+        float baseRed = healthDeficit * 0.75f;
+        if (damageFlashTimer > 0.0f) {
+            baseRed = (baseRed > 0.90f) ? baseRed : 0.90f;
+        }
+        return (baseRed < 1.0f) ? baseRed : 1.0f;
+    }
     glm::vec4 getDamageTint() const {
-        if (maxHealth <= 0) return glm::vec4(1.0f);
-        float damageRatio = 1.0f - (static_cast<float>(health) / static_cast<float>(maxHealth));
-        return glm::vec4(1.0f, 0.0f, 0.0f, damageRatio * 0.75f);
+        float intensity = getDamageIntensity();
+        return glm::vec4(1.0f, 0.0f, 0.0f, intensity);
     }
 
     void jump();

@@ -51,7 +51,7 @@ void Renderer::initShapeBuffers() {
     glBindVertexArray(0);
 }
 
-void Renderer::Draw(const VertexArray& vao, glm::vec2 position, glm::vec2 size, float highlight, glm::vec4 tint, float rotation) {
+void Renderer::Draw(const VertexArray& vao, glm::vec2 position, glm::vec2 size, float highlight, glm::vec4 tint, float rotation, float damageIntensity) {
     shader->Use();
 
     glm::mat4 model = glm::mat4(1.0f);
@@ -75,7 +75,7 @@ void Renderer::Draw(const VertexArray& vao, glm::vec2 position, glm::vec2 size, 
 
     shader->SetFloat("u_Highlight", highlight);
     shader->SetVec4("u_Tint", tint);
-    shader->SetFloat("u_DamageIntensity", 0.0f);
+    shader->SetFloat("u_DamageIntensity", damageIntensity);
     shader->SetFloat("u_Grayscale", 0.0f);
     shader->SetInt("u_UseTexture", 0);
 

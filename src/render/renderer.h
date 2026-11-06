@@ -20,9 +20,9 @@ public:
 
     void SetScreenSize(float width, float height);
 
-    // Backward-compatible Draw method with optional rotation
     void Draw(const VertexArray& vao, glm::vec2 position, glm::vec2 size,
-        float highlight = 0.0f, glm::vec4 tint = glm::vec4(1.0f), float rotation = 0.0f);
+        float highlight = 0.0f, glm::vec4 tint = glm::vec4(1.0f), float rotation = 0.0f,
+        float damageIntensity = 0.0f);
 
     // High-level 2D shape drawing methods
     void DrawQuad(const glm::vec2& position, const glm::vec2& size,
