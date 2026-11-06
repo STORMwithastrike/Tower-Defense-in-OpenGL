@@ -1,6 +1,7 @@
 #include "../headers/WaveManager.h"
 #include <cstdlib>
 
+// bn-set el values w nebda2 wave 1 3ala tool
 WaveManager::WaveManager()
     : currentWave(1),
     enemiesSpawned(0),
@@ -12,6 +13,7 @@ WaveManager::WaveManager()
     startWave(1);
 }
 
+// bn-reset el counters w n7aded 3adad el enemies w el delay le kol wave
 void WaveManager::startWave(int waveNumber) {
     currentWave = waveNumber;
     enemiesSpawned = 0;
@@ -19,6 +21,7 @@ void WaveManager::startWave(int waveNumber) {
     spawningFinished = false;
     gameWon = false;
 
+    // kol ma el wave te3la el 3adad byzeed w el delay by2el
     if (currentWave == 1) {
         enemiesInCurrentWave = 3;
         spawnInterval = 2.0f;
@@ -37,6 +40,7 @@ void WaveManager::startWave(int waveNumber) {
     }
 }
 
+// bnkhtar noo3 random 3ala 7asab el wave
 EnemyType WaveManager::getRandomEnemyTypeForWave(int wave) {
     if (wave == 1) {
         return EnemyType::EasyUpperRanged;
@@ -64,6 +68,7 @@ EnemyType WaveManager::getRandomEnemyTypeForWave(int wave) {
     }
 }
 
+// check kol frame law ge wa2t el spawn
 bool WaveManager::shouldSpawnEnemy(float dt, int numLanes, EnemyType& outType, int& outLane) {
     if (spawningFinished || gameWon || numLanes <= 0) {
         return false;
@@ -71,6 +76,7 @@ bool WaveManager::shouldSpawnEnemy(float dt, int numLanes, EnemyType& outType, i
 
     spawnTimer += dt;
 
+    // awel ma n3addi el interval bn-spawn enemy gedid
     if (spawnTimer >= spawnInterval) {
         spawnTimer = 0.0f;
 
@@ -79,6 +85,7 @@ bool WaveManager::shouldSpawnEnemy(float dt, int numLanes, EnemyType& outType, i
 
         enemiesSpawned++;
 
+        // law weselna le a5er el wave nwa2af
         if (enemiesSpawned >= enemiesInCurrentWave) {
             spawningFinished = true;
         }
@@ -89,6 +96,7 @@ bool WaveManager::shouldSpawnEnemy(float dt, int numLanes, EnemyType& outType, i
     return false;
 }
 
+// lma kol enemies el wave ymouto nrooh lel wave elly ba3daha
 void WaveManager::onWaveEnemiesCleared() {
     if (!spawningFinished) {
         return;
@@ -102,6 +110,7 @@ void WaveManager::onWaveEnemiesCleared() {
     }
 }
 
+// getters 3ashan el UI w state el game
 int WaveManager::getCurrentWave() const {
     return currentWave;
 }
